@@ -25,10 +25,17 @@ class Tilemap:
         self.offgrid_tiles = []
 
 
+    def solid_check(self , pos):
+        tile_loc  = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size)) 
+        if tile_loc in self.tilemap:
+            if self.tilemap[tile_loc]["type"] in PHYSICS_TILES:
+                return self.tilemap[tile_loc]
+        
+
 
     def extract_tiles(self, id_pair , keep = True):
         matching_tiles = []
-        for tile in self.offgrid_tiles:
+        for tile in self.offgrid_tiles.copy():
             if (tile["type"] , tile["variant"]) in id_pair:
                 matching_tiles.append(tile.copy())
                 if not keep:
@@ -36,7 +43,7 @@ class Tilemap:
 
 
 
-        for loc in self.tilemap:
+        for loc in self.tilemap.copy():
             tile = self.tilemap[loc]
             if (tile["type"] , tile["variant"]) in id_pair:
                 matching_tiles.append(tile.copy())
@@ -65,7 +72,8 @@ class Tilemap:
             data = json.load(f)
             self.tilemap = data["tilemap"]
             self.tile_size = data["tile_size"]
-            self.offgrid_tiles = data["offgrid_tiles"]
+            self.offgrid_tiles = data["offgrid"]
+            
 
     def autotile(self):
         for loc in self.tilemap:

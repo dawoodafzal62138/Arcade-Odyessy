@@ -1938,6 +1938,39 @@
                 -153.0,
                 54.0
             ]
+        },
+        {
+            "type": "spawner",
+            "variant": 0,
+            "pos": [
+                80.0,
+                125.0
+            ]
+        },
+       
+        {
+            "type": "spawner",
+            "variant": 1,
+            "pos": [
+                218.0,
+                129.0
+            ]
+        },
+        {
+            "type": "spawner",
+            "variant": 1,
+            "pos": [
+                291.0,
+                94.0
+            ]
+        },
+        {
+            "type": "spawner",
+            "variant": 1,
+            "pos": [
+                199.0,
+                28.0
+            ]
         }
     ]
 }
