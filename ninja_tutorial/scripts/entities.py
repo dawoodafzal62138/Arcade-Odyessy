@@ -98,6 +98,13 @@ class Player(PhysicsEntity):
             self.airtime = 0
             self.no_jump = 1
 
+        if self.airtime > 120:
+            if not self.game.dead:
+                self.game.screenshake=max(self.game.screenshake, 16)
+
+            self.game.dead += 1
+        
+        
         self.wall_slide = False
         if (self.collisions['right'] or self.collisions['left'] )  and self.airtime > 4:
             self.wall_slide = True
@@ -107,6 +114,7 @@ class Player(PhysicsEntity):
             if self.collisions['left']:
                 self.flip = True
             self.set_action("wall_slide")
+        
         elif self.airtime > 4:
             self.set_action("jump")
 
@@ -171,9 +179,11 @@ class Player(PhysicsEntity):
             self.velocity[1] = -3.
             self.no_jump -= 1
             self.airtime = 5
+            return True
 
     def dash(self):
         if not self.dashing:
+            self.game.sounds["dash"].play(0)
             if self.flip:
                 self.dashing = -60
             else:
@@ -200,10 +210,12 @@ class Enemy(PhysicsEntity):
                     dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
                     if (abs(dis[1]) < 16):
                         if (self.flip and dis[0] < 0):
+                            self.game.sounds["shoot"].play(0)
                             self.game.projectiles.append([[self.rect().centerx - 7, self.rect().centery], -1.5, 0])
                             for i in range(4):
                                 self.game.sparks.append(Sparks(self.game.projectiles[-1][0], random.random() - 0.5 + math.pi, 2 + random.random()))
                         if (not self.flip and dis[0] > 0):
+                            self.game.sounds["shoot"].play(0)
                             self.game.projectiles.append([[self.rect().centerx + 7, self.rect().centery], 1.5, 0])
                             for i in range(4):
                                 self.game.sparks.append(Sparks(self.game.projectiles[-1][0], random.random() - 0.5, 2 + random.random()))
@@ -216,6 +228,21 @@ class Enemy(PhysicsEntity):
                 self.set_action('run')
             else:
                 self.set_action('idle')
+
+
+            if abs(self.game.player.dashing) >= 50 :
+                if self.rect().colliderect(self.game.player.rect()):
+                    self.game.screenshake=max(self.game.screenshake, 16)
+
+                    for i in range(30):
+                        angle = random.random() * math.pi * 2
+                        speed = random.random() * 5
+                        self.game.sparks.append(Sparks(self.game.player.rect().center, angle, 2 + random.random()))
+                        self.game.particles.append(Particles(self.game, 'particle', self.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
+                    self.game.sparks.append(Sparks(self.rect().center, 0,  4+ random.random()))
+                    self.game.sparks.append(Sparks(self.rect().center, math.pi, 4 + random.random()))
+
+                    return True
 
     def render(self, surf , offset = (0,0)):
         super().render(surf, offset)

@@ -1,4 +1,5 @@
 import math
+import os
 from pathlib import Path
 import random
 import random
@@ -22,7 +23,8 @@ class Game:
 
         pygame.display.set_caption('ninja game')
         self.screen = pygame.display.set_mode((640, 480) , pygame.SCALED)
-        self.display = pygame.Surface((320, 240))
+        self.display = pygame.Surface((320, 240) , pygame.SRCALPHA)
+        self.display_2 = pygame.Surface((320, 240) )
 
         self.clock = pygame.time.Clock()
         
@@ -50,6 +52,23 @@ class Game:
             "projectile" : load_image('/projectile.png'),
         }
 
+
+
+        self.sounds={
+            "jump" : pygame.mixer.Sound(f"{BASE_PATH}/data/sfx/jump.wav"),
+            "shoot" : pygame.mixer.Sound(f"{BASE_PATH}/data/sfx/shoot.wav"),
+            "hit" : pygame.mixer.Sound(f"{BASE_PATH}/data/sfx/hit.wav"),
+            "dash" : pygame.mixer.Sound(f"{BASE_PATH}/data/sfx/dash.wav"),
+            "ambience" : pygame.mixer.Sound(f"{BASE_PATH}/data/sfx/ambience.wav"),
+        }
+
+        self.sounds["ambience"].set_volume(0.2)
+        self.sounds["shoot"].set_volume(0.4)
+        self.sounds["hit"].set_volume(0.8)
+        self.sounds["dash"].set_volume(0.3)
+        self.sounds["jump"].set_volume(0.7)
+
+
         self.clouds = Clouds(self.assets["clouds"] , count = 16)
         
         self.player = Player(self, (50, 50), (8, 15))
@@ -57,8 +76,8 @@ class Game:
         self.tilemap = Tilemap(self, tile_size=16)
         
         self.scroll = [0, 0]
-
-        self.load_level("0")
+        self.level = 0
+        self.load_level(self.level)
 
     
     def load_level(self, map_id):
@@ -75,15 +94,47 @@ class Game:
         for spawner in self.tilemap.extract_tiles([("spawners" , 0) , ("spawners" , 1)]  , keep = False):
             if spawner["variant"] == 0:
                 self.player.pos  = spawner["pos"]
+                self.player.airtime = 0
             else:
                 self.enemies.append(Enemy(self ,spawner["pos"] , (8, 15)))
+
+        self.dead = 0
+
+        self.screenshake = 0
+        self.transition = -30
+    
+    
     
     
     def run(self):
+        pygame.mixer.music.load(f"{BASE_PATH}/data/music.wav")
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+        self.sounds["ambience"].play(-1)    
 
 
         while True:
-            self.display.blit(self.assets['background'], (0, 0))
+        
+        
+            
+            self.display.fill((0, 0 ,0, 0))
+            self.display_2.blit(self.assets['background'], (0, 0))
+
+            self.screenshake = max(0, self.screenshake - 1)
+
+            if self.dead:
+                self.dead += 1
+                if self.dead >= 10:
+                    self.transition = min(self.transition  + 1 , 30 )
+                if self.dead > 40:
+                    self.load_level(self.level)
+            if not (len(self.enemies)):
+                self.transition+=1
+                if self.transition > 30:
+                    self.level = min(self.level +1 , len(os.listdir(f"{BASE_PATH}/data/maps/")) - 1)
+                    self.load_level(self.level)
+            if self.transition < 0:
+                self.transition+=1 
 
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() // 2 - self.scroll[0]) / 30
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() // 2 - self.scroll[1]) / 30
@@ -99,18 +150,23 @@ class Game:
                     self.particles.append(Particles(self, "leaf", pos, velocity = [-0.2, 0.6 ] , frame = random.randint(0, 17)))
 
             self.clouds.update()
-            self.clouds.render(self.display , offset=render_scroll)
+            self.clouds.render(self.display_2 , offset=render_scroll)
 
             self.tilemap.render(self.display  , offset=render_scroll)
             
             
             for enemy in self.enemies.copy():
-                enemy.update(self.tilemap,  (0,0))
-                enemy.render(self.display, offset = render_scroll)
+                kill = enemy.update(self.tilemap,  (0,0))
+                if kill:
+                    self.enemies.remove(enemy)
+                    self.sounds["hit"].play(0) 
+                else:
+                    enemy.render(self.display, offset = render_scroll)
 
 
-            self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
-            self.player.render(self.display , offset=render_scroll)
+            if not self.dead:
+                self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
+                self.player.render(self.display , offset=render_scroll)
 
 
 
@@ -130,6 +186,9 @@ class Game:
                 elif abs(self.player.dashing) < 50:
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
+                        self.dead+=1
+                        self.sounds["hit"].play(0)
+                        self.screenshake=max(self.screenshake, 16)
                         
                         for i in range(30):
                             angle = random.random() * math.pi * 2
@@ -143,6 +202,12 @@ class Game:
                 spark.render(self.display, offset=render_scroll)
                 if kill:
                     self.sparks.remove(spark)
+
+            display_mask = pygame.mask.from_surface(self.display)
+            display_mask_outline = display_mask.to_surface(setcolor=(0,0,0 ,180), unsetcolor=(0, 0, 0, 0))
+            for offset in [(0, -1), (1, 0), (0, 1), (-1, 0)]:
+                self.display_2.blit(display_mask_outline , offset)
+
             
             for particle in self.particles.copy():
                 kill = particle.update()
@@ -162,7 +227,8 @@ class Game:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = True
                     if event.key == pygame.K_UP or event.key == pygame.K_w or event.key == pygame.K_SPACE:
-                        self.player.jump()
+                        if self.player.jump():
+                            self.sounds["jump"].play(0)
                     if event.key == pygame.K_x:
                         self.player.dash()
                 if event.type == pygame.KEYUP:
@@ -170,8 +236,18 @@ class Game:
                         self.movement[0] = False
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = False
+
+            if self.transition:
+                transition_surface =   pygame.Surface(self.display.get_size())
+                pygame.draw.circle(transition_surface , (255,255,255) , (self.display.get_width() // 2, self.display.get_height() // 2), (30 -abs(self.transition)) * 8)
+                transition_surface.set_colorkey((255, 255, 255))
+                self.display.blit(transition_surface, (0, 0))
+
+
+            self.display_2.blit(self.display, (0, 0))
             
-            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
+            screen_shake_offset = (random.randint(-self.screenshake, self.screenshake), random.randint(-self.screenshake, self.screenshake))
+            self.screen.blit(pygame.transform.scale(self.display_2, self.screen.get_size()), screen_shake_offset)
             pygame.display.update()
             self.clock.tick(60)
 
