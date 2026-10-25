@@ -26,8 +26,31 @@ class Tilemap:
 
 
 
+    def extract_tiles(self, id_pair , keep = True):
+        matching_tiles = []
+        for tile in self.offgrid_tiles:
+            if (tile["type"] , tile["variant"]) in id_pair:
+                matching_tiles.append(tile.copy())
+                if not keep:
+                    self.offgrid_tiles.remove(tile)
 
 
+
+        for loc in self.tilemap:
+            tile = self.tilemap[loc]
+            if (tile["type"] , tile["variant"]) in id_pair:
+                matching_tiles.append(tile.copy())
+                matching_tiles[-1]["pos"] = matching_tiles[-1]["pos"].copy()
+                matching_tiles[-1]["pos"][0] *= self.tile_size
+                matching_tiles[-1]["pos"][1] *= self.tile_size                
+                
+                
+                if not keep:
+                    del self.tilemap[loc]
+
+
+        return matching_tiles
+    
     def save(self, path):
         with open(path , "w") as f:
             data  = {
