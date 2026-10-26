@@ -2,6 +2,7 @@ from settings import *
 from player import Player
 from sprites import *
 from groups import *
+import time
 
 
 
@@ -10,7 +11,7 @@ class Game:
     def __init__(self):
         
         pygame.init()
-        self.display_surface=pygame.display.set_mode((WIDTH,HEIGHT))
+        self.display_surface=pygame.display.set_mode((WIDTH,HEIGHT) , pygame.SCALED)
         pygame.mouse.set_visible(False) 
         pygame.mouse.set_relative_mode(True)
         pygame.display.set_caption("Vampire Shooter")
@@ -19,6 +20,8 @@ class Game:
         self.can_shoot=True
         self.shoot_cooldown=100
         self.spawn_pos=[]
+        self.last_damage_time=-600
+        self.damage_cooldown=600
 
         # audio
         self.shoot_sound=pygame.mixer.Sound(join("audio","shoot.wav"))
@@ -38,16 +41,16 @@ class Game:
         
 
 
-        # enemy_event
-        self.enemy_event=pygame.USEREVENT+1
-        pygame.time.set_timer(self.enemy_event,800)
-        
-        
         # setup
-        self.setup()
         self.load_images()
+        self.setup()
 
-
+        # enemy spawn timer: 0.5s between spawners, 2.0s before next round, 5 cycles max
+        self.enemy_event = pygame.USEREVENT + 1
+        self.current_spawn_index = 0
+        self.cycle_count = 0
+        self.max_cycles = 5
+        pygame.time.set_timer(self.enemy_event, 500)
 
         cursor(self.cursor_image,self.crosshair_sprite)
 
@@ -66,6 +69,21 @@ class Game:
 
         self.cursor_image=pygame.image.load(join("images","crossshair.png")).convert_alpha()
         self.cursor_image=pygame.transform.scale(self.cursor_image,(70,70))
+
+        # hearts (bright red color)
+        heart_sheet = pygame.image.load(join("images", "16x16 Heart Health Red Horizontal.png")).convert_alpha()
+        heart_full_raw = pygame.transform.scale2x(heart_sheet.subsurface((0, 0, 16, 16)))
+        self.heart_full = heart_full_raw.copy()
+        w, h = self.heart_full.get_size()
+        for x in range(w):
+            for y in range(h):
+                r, g, b, a = self.heart_full.get_at((x, y))
+                if a > 0 and (r > 60 or g > 40):
+                    r = min(255, int(r * 1.8) + 30)
+                    g = min(255, int(g * 1.1))
+                    b = min(255, int(b * 1.1))
+                    self.heart_full.set_at((x, y), (r, g, b, a))
+        self.heart_empty = pygame.transform.scale2x(heart_sheet.subsurface((32, 0, 16, 16)))
 
     def shoot_timing(self):
         if not self.can_shoot:
@@ -97,8 +115,18 @@ class Game:
                     bullet.kill()
 
     def player_collision(self):
-        if pygame.sprite.spritecollide(self.player,self.enemy_sprite,False,pygame.sprite.collide_mask):
-            self.running=False
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_damage_time > self.damage_cooldown:
+            collided = pygame.sprite.spritecollide(self.player, self.enemy_sprite, False, pygame.sprite.collide_mask)
+            living_collided = [e for e in collided if e.death_time == 0]
+            if living_collided:
+                self.impact_sound.play()
+                self.player.health = max(0, self.player.health - 1)
+                self.last_damage_time = current_time
+                for enemy_sprite in living_collided:
+                    enemy_sprite.destroy()
+                if self.player.health <= 0:
+                    self.running = False
     def setup(self):
         map=load_pygame(join("data","maps","world.tmx"))
 
@@ -115,10 +143,43 @@ class Game:
             else:
                 self.spawn_pos.append((obj.x,obj.y))
 
+    def spawn_enemies(self):
+        if not self.spawn_pos or self.cycle_count >= self.max_cycles:
+            return
+
+        pos = self.spawn_pos[self.current_spawn_index]
+        enemy(
+            choice(list(self.enemy_frames.values())),
+            pos,
+            self.player,
+            self.collision_sprites,
+            (self.all_sprites, self.enemy_sprite)
+        )
+
+        self.current_spawn_index += 1
+        if self.current_spawn_index >= len(self.spawn_pos):
+            self.current_spawn_index = 0
+            self.cycle_count += 1
+            if self.cycle_count >= self.max_cycles:
+                pygame.time.set_timer(self.enemy_event, 0)
+            else:
+                # 2.0 sec delay after completing all spawners before restarting at spawner 1
+                pygame.time.set_timer(self.enemy_event, 2000)
+        else:
+            # 0.5 sec delay before next spawner
+            pygame.time.set_timer(self.enemy_event, 500)
+
     def health(self):
-        rect=pygame.surface.Surface((50,50))
-        rect.fill("black")
-        self.display_surface.blit(rect,(WIDTH /6,HEIGHT/6))            
+        start_x = 20
+        start_y = 20
+        spacing = 38
+        for i in range(self.player.max_health):
+            x = start_x + i * spacing
+            y = start_y
+            if i < self.player.health:
+                self.display_surface.blit(self.heart_full, (x, y))
+            else:
+                self.display_surface.blit(self.heart_empty, (x, y))
 
     def run(self):
 
@@ -133,23 +194,22 @@ class Game:
                     self.running=False
                 if event.type==pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.running=False    
-
-                if event.type==self.enemy_event:
-                    enemy(choice(list(self.enemy_frames.values())),choice(self.spawn_pos),self.player,self.collision_sprites,(self.all_sprites,self.enemy_sprite))
+                        self.running=False
+                if event.type == self.enemy_event:
+                    self.spawn_enemies()
             self.input()
             # update
             self.all_sprites.update(dt)
             self.crosshair_sprite.update(dt)
             self.collisions()
-            # self.player_collision()
+            self.player_collision()
             
 
             # draw
             self.display_surface.fill("black")
             self.all_sprites.draw(self.player.rect.center)
             self.crosshair_sprite.draw(self.display_surface)
-            # self.health()
+            self.health()
             pygame.display.update()          
         pygame.quit()
         exit()

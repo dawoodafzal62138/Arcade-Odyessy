@@ -11,6 +11,9 @@ class Player(pygame.sprite.Sprite):
         self.rect=self.image.get_frect(center=pos)
         self.hit_box=self.rect.inflate(-55,-90)
         self.collision_sprite=collision_sprite
+        # health
+        self.health = 10
+        self.max_health = 10
         # movement
         self.direction=pygame.math.Vector2()
         self.speed=450
