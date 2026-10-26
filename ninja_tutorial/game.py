@@ -14,7 +14,7 @@ from scripts.entities import Player , Enemy
 from scripts.tilemap import Tilemap
 from scripts.clouds import Clouds
 
-BASE_PATH = str(Path(__file__).parent.parent.resolve() / "ninja_tutorial")
+BASE_PATH = str(Path(__file__).parent.parent.resolve() / "ninja_game")
 
 
 class Game:
@@ -100,6 +100,7 @@ class Game:
 
         self.dead = 0
 
+
         self.screenshake = 0
         self.transition = -30
     
@@ -115,6 +116,7 @@ class Game:
 
         while True:
         
+          
         
             
             self.display.fill((0, 0 ,0, 0))
@@ -187,6 +189,7 @@ class Game:
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
                         self.dead+=1
+                        
                         self.sounds["hit"].play(0)
                         self.screenshake=max(self.screenshake, 16)
                         
@@ -243,7 +246,7 @@ class Game:
                 transition_surface.set_colorkey((255, 255, 255))
                 self.display.blit(transition_surface, (0, 0))
 
-
+            
             self.display_2.blit(self.display, (0, 0))
             
             screen_shake_offset = (random.randint(-self.screenshake, self.screenshake), random.randint(-self.screenshake, self.screenshake))

@@ -8,7 +8,7 @@ from scripts.tilemap import Tilemap
 from scripts.clouds import Clouds
 
 
-BASE_PATH = str(pathlib.Path(__file__).parent.parent.resolve() / "ninja_tutorial")
+BASE_PATH = str(pathlib.Path(__file__).parent.parent.resolve() / "ninja_game")
 
 
 
