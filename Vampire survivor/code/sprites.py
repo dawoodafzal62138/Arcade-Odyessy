@@ -40,16 +40,14 @@ class Gun(pygame.sprite.Sprite):
     
     
     def get_direction(self):
-         try:
-            mouse_pos=pygame.math.Vector2(pygame.mouse.get_pos())
-            player_pos=pygame.math.Vector2((WIDTH/2,HEIGHT/2))
-    
-            if self.player_direction.length()>0:
-                self.player_direction=(mouse_pos-player_pos).normalize()
-            else:
-                self.player_direction=(mouse_pos-player_pos)
-         except Exception as e:
-             pass    
+        try:
+            mouse_pos = pygame.math.Vector2(pygame.mouse.get_pos())
+            player_pos = pygame.math.Vector2((WIDTH / 2, HEIGHT / 2))
+            direction = mouse_pos - player_pos
+            if direction.length() > 0:
+                self.player_direction = direction.normalize()
+        except Exception as e:
+            pass    
     def update(self,dt):
         self.get_direction()
         self.rotation()
@@ -101,7 +99,9 @@ class enemy(pygame.sprite.Sprite):
     def move(self,dt):
         player_pos=pygame.math.Vector2(self.player.rect.center)
         enemy_pos=pygame.math.Vector2(self.rect.center)
-        self.direction=(player_pos-enemy_pos).normalize()
+        direction = player_pos - enemy_pos
+        if direction.length() > 0:
+            self.direction = direction.normalize()
 
 
         self.hit_box.x+=self.direction.x*self.speed*dt

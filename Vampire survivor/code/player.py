@@ -17,6 +17,10 @@ class Player(pygame.sprite.Sprite):
         # movement
         self.direction=pygame.math.Vector2()
         self.speed=450
+        # hit feedback & mask
+        self.hit_time = -1000
+        self.hit_duration = 300
+        self.mask = pygame.mask.from_surface(self.image)
     
     # load all the images from different folder for player animation:  
     def load_images(self):
@@ -33,8 +37,8 @@ class Player(pygame.sprite.Sprite):
         keys=pygame.key.get_pressed()
         self.direction.x=int(keys[pygame.K_RIGHT] or keys[pygame.K_d])-int(keys[pygame.K_LEFT] or keys[pygame.K_a])    
         self.direction.y=int(keys[pygame.K_DOWN] or keys[pygame.K_s])-int(keys[pygame.K_UP] or keys[pygame.K_w])
-        if self.direction:
-            self.direction=self.direction.normalize() 
+        if self.direction.length() > 0:
+            self.direction = self.direction.normalize() 
 
     
     
@@ -72,8 +76,21 @@ class Player(pygame.sprite.Sprite):
         else:
            
             self.image=self.frames[self.state][int(self.frames_index)%len(self.frames[self.state])]
+
+    def hit(self):
+        self.hit_time = pygame.time.get_ticks()
+
+    def hit_timer(self):
+        if pygame.time.get_ticks() - self.hit_time < self.hit_duration:
+            mask = pygame.mask.from_surface(self.image)
+            mask_surf = mask.to_surface()
+            mask_surf.set_colorkey("black")
+            self.image = mask_surf
+
     def update(self,dt):
         self.input()
         self.movement(dt)
         self.animation(dt)
+        self.hit_timer()
+        self.mask = pygame.mask.from_surface(self.image)
 

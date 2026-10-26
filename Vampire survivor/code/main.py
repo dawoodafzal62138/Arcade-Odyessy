@@ -12,16 +12,23 @@ class Game:
         
         pygame.init()
         self.display_surface=pygame.display.set_mode((WIDTH,HEIGHT) , pygame.SCALED)
-        pygame.mouse.set_visible(False) 
-        pygame.mouse.set_relative_mode(True)
+        self.display = pygame.Surface((WIDTH, HEIGHT))
+        pygame.mouse.set_visible(True) 
         pygame.display.set_caption("Vampire Shooter")
+        pygame.event.set_grab(True)
         self.Clock=pygame.time.Clock()
         self.running=True
         self.can_shoot=True
+        self.shoot_time=0
         self.shoot_cooldown=100
         self.spawn_pos=[]
         self.last_damage_time=-600
         self.damage_cooldown=600
+
+        # effects (same as ninja game)
+        self.screenshake = 0
+        self.transition = 0
+        self.dead = 0
 
         # audio
         self.shoot_sound=pygame.mixer.Sound(join("audio","shoot.wav"))
@@ -38,13 +45,20 @@ class Game:
         self.bullet_sprite=pygame.sprite.Group()
         self.enemy_sprite=pygame.sprite.Group()
         self.crosshair_sprite=pygame.sprite.Group()
+
+        self.start_image=pygame.transform.smoothscale(pygame.image.load(join("images","start.jpeg")).convert() , (WIDTH,HEIGHT))
+        self.start_image_rect=self.start_image.get_rect(center=(WIDTH//2,HEIGHT//2))
+        self.start_game = False 
+
+        self.game_over_image=pygame.transform.smoothscale(pygame.image.load(join("images","gameover.jpeg")).convert() , (WIDTH,HEIGHT))
+        self.game_over_image_rect=self.game_over_image.get_rect(center=(WIDTH//2,HEIGHT//2))
+        self.game_over = False
+
         
-
-
+        
         # setup
         self.load_images()
         self.setup()
-
         # enemy spawn timer: 0.5s between spawners, 2.0s before next round, 5 cycles max
         self.enemy_event = pygame.USEREVENT + 1
         self.current_spawn_index = 0
@@ -123,10 +137,15 @@ class Game:
                 self.impact_sound.play()
                 self.player.health = max(0, self.player.health - 1)
                 self.last_damage_time = current_time
+                self.player.hit()
                 for enemy_sprite in living_collided:
                     enemy_sprite.destroy()
-                if self.player.health <= 0:
-                    self.running = False
+                if self.player.health <= 0 and not self.dead:
+                    self.dead = 1
+                    self.screenshake = max(self.screenshake, 25)
+                    self.transition = 0
+                    self.player.kill()
+                    self.gun.kill()
     def setup(self):
         map=load_pygame(join("data","maps","world.tmx"))
 
@@ -169,7 +188,8 @@ class Game:
             # 0.5 sec delay before next spawner
             pygame.time.set_timer(self.enemy_event, 500)
 
-    def health(self):
+    def health(self, target_surf=None):
+        surf = target_surf if target_surf is not None else self.display_surface
         start_x = 20
         start_y = 20
         spacing = 38
@@ -177,39 +197,125 @@ class Game:
             x = start_x + i * spacing
             y = start_y
             if i < self.player.health:
-                self.display_surface.blit(self.heart_full, (x, y))
+                surf.blit(self.heart_full, (x, y))
             else:
-                self.display_surface.blit(self.heart_empty, (x, y))
+                surf.blit(self.heart_empty, (x, y))
+
+    def restart(self):
+        self.all_sprites.empty()
+        self.collision_sprites.empty()
+        self.bullet_sprite.empty()
+        self.enemy_sprite.empty()
+        self.crosshair_sprite.empty()
+        self.spawn_pos = []
+        self.setup()
+        cursor(self.cursor_image, self.crosshair_sprite)
+        self.current_spawn_index = 0
+        self.cycle_count = 0
+        self.last_damage_time = -600
+        self.can_shoot = True
+        self.shoot_time = 0
+        self.dead = 0
+        self.screenshake = 16
+        self.transition = -30
+        self.game_over = False
+        pygame.time.set_timer(self.enemy_event, 500)
 
     def run(self):
-
         while self.running:
-            
-            
-            # dt
-            dt=self.Clock.tick(60)/1000
-            # event loop
-            for event in pygame.event.get():
-                if event.type==pygame.QUIT:
-                    self.running=False
-                if event.type==pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.running=False
-                if event.type == self.enemy_event:
-                    self.spawn_enemies()
-            self.input()
-            # update
-            self.all_sprites.update(dt)
-            self.crosshair_sprite.update(dt)
-            self.collisions()
-            self.player_collision()
-            
+            dt = self.Clock.tick(60) / 1000
 
-            # draw
-            self.display_surface.fill("black")
-            self.all_sprites.draw(self.player.rect.center)
-            self.crosshair_sprite.draw(self.display_surface)
-            self.health()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+                if not self.start_game:
+                    if event.type == pygame.KEYDOWN:
+                        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                            self.start_game = True
+                            self.screenshake = 16
+                            self.transition = -30
+                            self.dead = 0
+                            pygame.mouse.set_visible(False)
+                        elif event.key == pygame.K_ESCAPE:
+                            self.running = False
+                    elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        self.start_game = True
+                        self.screenshake = 16
+                        self.transition = -30
+                        self.dead = 0
+                        pygame.mouse.set_visible(False)
+
+                elif self.game_over:
+                    if event.type == pygame.KEYDOWN:
+                        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                            self.restart()
+                            pygame.mouse.set_visible(False)
+                        elif event.key == pygame.K_ESCAPE:
+                            self.running = False
+                    elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        self.restart()
+                        pygame.mouse.set_visible(False)
+
+                else:
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            self.running = False
+                    elif event.type == self.enemy_event:
+                        self.spawn_enemies()
+
+            if not self.start_game:
+                self.display_surface.blit(self.start_image, self.start_image_rect)
+            elif self.game_over:
+                self.display_surface.blit(self.game_over_image, self.game_over_image_rect)
+            else:
+                self.screenshake = max(0, self.screenshake - 1)
+
+                if self.dead:
+                    self.dead += 1
+                    if self.dead >= 5:
+                        self.transition = min(self.transition + 1, 30)
+                    if self.dead > 35:
+                        self.game_over = True
+                        pygame.mouse.set_visible(True)
+                elif self.transition < 0:
+                    self.transition += 1
+
+                if not self.dead:
+                    self.input()
+                    self.all_sprites.update(dt)
+                    self.crosshair_sprite.update(dt)
+                    self.collisions()
+                    self.player_collision()
+                else:
+                    self.all_sprites.update(dt)
+                    self.crosshair_sprite.update(dt)
+
+                # Draw to offscreen display surface
+                self.display.fill("black")
+                self.all_sprites.draw(self.player.rect.center, self.display)
+                if not self.dead:
+                    self.crosshair_sprite.draw(self.display)
+                self.health(self.display)
+
+                # Transition circle effect (same as ninja game)
+                if self.transition:
+                    transition_surface = pygame.Surface(self.display.get_size())
+                    radius = max(0, int((30 - abs(self.transition)) * 28))
+                    if radius > 0:
+                        pygame.draw.circle(transition_surface, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2), radius)
+                    transition_surface.set_colorkey((255, 255, 255))
+                    self.display.blit(transition_surface, (0, 0))
+
+                # Screenshake effect (same as ninja game)
+                if self.screenshake:
+                    screen_shake_offset = (randint(-self.screenshake, self.screenshake), randint(-self.screenshake, self.screenshake))
+                else:
+                    screen_shake_offset = (0, 0)
+
+                self.display_surface.fill("black")
+                self.display_surface.blit(self.display, screen_shake_offset)
+
             pygame.display.update()          
         pygame.quit()
         exit()
