@@ -4,7 +4,7 @@ from sys import exit
 from pathlib import Path
 
 pygame.init()
-Screen=pygame.display.set_mode((450,600))
+Screen=pygame.display.set_mode((450,600) , pygame.SCALED)
 pygame.display.set_caption("FLappy bird")
 Clock=pygame.time.Clock()
 Game_active=False
