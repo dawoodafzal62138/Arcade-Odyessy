@@ -94,7 +94,8 @@ class Game:
 
         for draw_layer, name in enumerate(layer_names):
             layer = tmx_map.get_layer_by_name(name)
-            if not layer.visible:
+            # Tiled visibility controls artwork, not physical boundaries.
+            if not layer.visible and name != 'Collisions':
                 continue
 
             if isinstance(layer, pytmx.TiledTileLayer):
@@ -106,7 +107,7 @@ class Game:
 
             elif isinstance(layer, pytmx.TiledObjectGroup):
                 for obj in layer:
-                    if not obj.visible:
+                    if not obj.visible and name != 'Collisions':
                         continue
                     pos = (obj.x * TILE_SCALE, obj.y * TILE_SCALE)
                     if name == 'Collisions':
