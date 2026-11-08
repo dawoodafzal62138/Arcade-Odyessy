@@ -5,10 +5,11 @@ from settigns import *
 
 
 class Sprite(pygame.sprite.Sprite):
-    def __init__(self, pos, surface, groups):
+    def __init__(self, pos, surface, groups,):
         # Support both (pos, surface, groups) and (surface, pos, groups)
         if isinstance(pos, pygame.Surface):
             surface, pos = pos, surface
+       
         super().__init__(groups)
         self.image = surface
         if hasattr(self.image, 'get_frect'):
@@ -34,7 +35,7 @@ class CollisionSprites(pygame.sprite.Sprite):
 
 
 class Animation(Sprite):
-    def __init__(self, pos, frames, groups):
+    def __init__(self, pos, frames, groups, z=0):
         self.frames = frames
         self.frame_index = 0
         self.animation_speed = 10
@@ -56,6 +57,7 @@ class Animation(Sprite):
 class Player(Animation):
     def __init__(self, pos, groups, collisions_sprites, frames, create_bullet_func=None):
         super().__init__(pos, frames, groups)
+      
 
         # Scaled collision box and image rect
         self.col_w = int(200 * PLAYER_SCALE)

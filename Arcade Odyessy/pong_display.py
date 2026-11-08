@@ -54,33 +54,83 @@ class PongPaddle(pygame.sprite.Sprite):
         self.speed = 600
         self.is_player1 = is_player1
         self.last_ai_mode = True
+        self.position_y = float(self.rect.centery)
+        self.manual_timeout = 0.0
+        self.ai_speed = 440
+        self.ai_reaction_timer = 0.0
+        self.ai_target = float(WINDOW_HEIGHT / 2)
+        self.ai_shot_error = 0.0
+        self.ai_tracking_shot = False
 
-    def input(self, ball=None):
+    def ai_input(self, dt, ball):
+        """Predict wall bounces, but react slowly and misjudge some returns."""
+        incoming = ball.active and ball.direction.x < 0
+        if incoming and not self.ai_tracking_shot:
+            # Keep the same mistake throughout a shot; reroll on the next return.
+            self.ai_shot_error = random.uniform(-45, 45)
+            if random.random() < 0.18:
+                self.ai_shot_error += random.choice((-1, 1)) * random.uniform(110, 180)
+            self.ai_reaction_timer = random.uniform(0.16, 0.30)
+        self.ai_tracking_shot = incoming
+        self.ai_reaction_timer -= dt
+
+        if self.ai_reaction_timer <= 0:
+            self.ai_reaction_timer = random.uniform(0.12, 0.22)
+            if incoming:
+                velocity = ball.direction * ball.speed
+                contact_x = self.rect.right + ball.rect.width / 2
+                time_to_hit = max(0.0, (contact_x - ball.rect.centerx) / velocity.x)
+                predicted_y = ball.rect.centery + velocity.y * time_to_hit
+
+                # Fold the trajectory between the walls, allowing multiple bounces.
+                radius = ball.rect.height / 2
+                travel_height = WINDOW_HEIGHT - 2 * radius
+                folded_y = (predicted_y - radius) % (2 * travel_height)
+                intercept = radius + min(folded_y, 2 * travel_height - folded_y)
+                self.ai_target = intercept + self.ai_shot_error
+            else:
+                # Recover toward center while the ball travels away or waits to serve.
+                self.ai_target = WINDOW_HEIGHT / 2
+
+            half_height = self.rect.height / 2
+            self.ai_target = max(10 + half_height,
+                                 min(WINDOW_HEIGHT - 10 - half_height, self.ai_target))
+
+        diff = self.ai_target - self.position_y
+        self.direction = 0 if abs(diff) <= 10 else (1 if diff > 0 else -1)
+
+    def input(self, ball=None, dt=0.0):
         keys = pygame.key.get_pressed()
         if self.is_player1:
-            # Player 1 controls (Right Paddle): Up/Down or K/M
+            # Player 1 controls the right paddle.
             self.direction = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
         else:
-            # Player 2 controls (Left Paddle): W/S
             p2_input = int(keys[pygame.K_s]) - int(keys[pygame.K_w])
-            if p2_input != 0:
+            if p2_input:
                 self.direction = p2_input
+                self.manual_timeout = 2.0
                 self.last_ai_mode = False
-            elif self.last_ai_mode and ball is not None:
-                # Smooth adaptive AI when single-player
-                diff = ball.rect.centery - self.rect.centery
-                if abs(diff) > 20:
-                    self.direction = 1 if diff > 0 else -1
-                else:
-                    self.direction = 0
+                self.ai_tracking_shot = False
+            else:
+                self.manual_timeout = max(0.0, self.manual_timeout - dt)
+                self.last_ai_mode = self.manual_timeout == 0
+                self.direction = 0
+                if self.last_ai_mode and ball is not None:
+                    self.ai_input(dt, ball)
 
     def update(self, dt, ball=None):
-        self.input(ball)
-        self.rect.centery += int(self.direction * self.speed * dt)
-        if self.rect.top < 10:
-            self.rect.top = 10
-        if self.rect.bottom > WINDOW_HEIGHT - 10:
-            self.rect.bottom = WINDOW_HEIGHT - 10
+        self.input(ball, dt)
+        speed = self.ai_speed if not self.is_player1 and self.last_ai_mode else self.speed
+        movement = self.direction * speed * dt
+        if not self.is_player1 and self.last_ai_mode:
+            # Stop at the target rather than oscillating around it.
+            distance = self.ai_target - self.position_y
+            movement = max(-abs(distance), min(abs(distance), movement))
+        self.position_y += movement
+        half_height = self.rect.height / 2
+        self.position_y = max(10 + half_height,
+                              min(WINDOW_HEIGHT - 10 - half_height, self.position_y))
+        self.rect.centery = round(self.position_y)
 
 
 class PongBall(pygame.sprite.Sprite):
