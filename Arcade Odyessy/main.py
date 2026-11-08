@@ -103,6 +103,8 @@ class Game:
                     pos = (x * tmx_map.tilewidth * TILE_SCALE,
                            y * tmx_map.tileheight * TILE_SCALE)
                     sprite = Sprite(pos, scale_image(image), self.all_sprites)
+                    if name == 'Ground_background_tiles':
+                        sprite.parallax_factor = 0.7
                     self.all_sprites.change_layer(sprite, draw_layer)
 
             elif isinstance(layer, pytmx.TiledObjectGroup):
