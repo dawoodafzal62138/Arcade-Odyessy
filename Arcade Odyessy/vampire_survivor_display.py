@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade, arcade_mouse
 import os
 import sys
 import math
@@ -427,7 +428,7 @@ class VampireSurvivorDisplay:
         while running:
             dt = clock.tick(60) / 1000
             raw_mouse = pygame.mouse.get_pos()
-            local_mouse = pygame.math.Vector2(raw_mouse[0] - pos_x, raw_mouse[1] - pos_y)
+            local_mouse = pygame.math.Vector2(arcade_mouse(screen, raw_mouse, self.game_surface.get_size()))
 
             # -------------------------------------------------------------
             # EVENT HANDLING
@@ -591,10 +592,8 @@ class VampireSurvivorDisplay:
             shake_x = random.randint(-screenshake, screenshake) if screenshake else 0
             shake_y = random.randint(-screenshake, screenshake) if screenshake else 0
 
-            screen.blit(self.game_surface, (pos_x + shake_x, pos_y + shake_y))
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y))
 
-            frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-            pygame.draw.rect(screen, (220, 50, 80), frame_rect, width=3, border_radius=6)
 
             hint = hud_font.render(
                 "VAMPIRE SURVIVOR  |  WASD: Move  |  Mouse: Aim  |  Left Click: Shoot  |  ESC: Exit",

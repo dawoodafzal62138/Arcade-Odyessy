@@ -54,6 +54,31 @@ class Animation(Sprite):
             self.image = self.frames[int(self.frame_index) % len(self.frames)]
 
 
+class JumpSpark(Sprite):
+    """A short, fading magic spark emitted beneath an airborne wizard."""
+
+    def __init__(self, pos, velocity, groups):
+        super().__init__(pos, pygame.Surface((18, 18), pygame.SRCALPHA), groups)
+        self.position = pygame.Vector2(pos)
+        self.velocity = pygame.Vector2(velocity)
+        self.lifetime = random.uniform(0.25, 0.45)
+        self.remaining = self.lifetime
+
+    def update(self, dt):
+        self.remaining -= dt
+        if self.remaining <= 0:
+            self.kill()
+            return
+        self.position += self.velocity * dt
+        self.velocity.y += 220 * dt
+        self.rect.center = self.position
+        self.image.fill((0, 0, 0, 0))
+        radius = max(1, round(6 * self.remaining / self.lifetime))
+        pygame.draw.circle(self.image, (65, 175, 255, 90), (9, 9), radius + 3)
+        pygame.draw.circle(self.image, (175, 245, 255), (9, 9), radius)
+        self.image.set_alpha(round(255 * self.remaining / self.lifetime))
+
+
 class Player(Animation):
     def __init__(self, pos, groups, collisions_sprites, frames, create_bullet_func=None):
         super().__init__(pos, frames, groups)
@@ -84,12 +109,36 @@ class Player(Animation):
         self.on_floor = False
         self.flip = False
         self.state = 'idle'
+        self.air_jump_available = True
+        self.jump_held = False
+
+    def jump(self):
+        if self.on_floor:
+            self.air_jump_available = True
+        else:
+            # Unlimited airborne jumps while testing the overworld.
+            self.double_jump_effect()
+        self.direction.y = -22
+        self.on_floor = False
+        self.frame_index = 0
+
+    def double_jump_effect(self):
+        for index in range(16):
+            angle = math.tau * index / 16
+            velocity = (math.cos(angle) * random.uniform(100, 190),
+                        math.sin(angle) * 65 + 45)
+            spark = JumpSpark(self.rect.midbottom, velocity, self.groups())
+            for group in self.groups():
+                if isinstance(group, pygame.sprite.LayeredUpdates):
+                    group.change_layer(spark, group.get_layer_of_sprite(self) + 1)
 
     def input(self):
         key = pygame.key.get_pressed()
         self.direction.x = int(key[pygame.K_d]) - int(key[pygame.K_a]) or int(key[pygame.K_RIGHT]) - int(key[pygame.K_LEFT])
-        if (key[pygame.K_w] or key[pygame.K_UP] or key[pygame.K_SPACE]) and self.on_floor:
-            self.direction.y = -22
+        jump_pressed = bool(key[pygame.K_w] or key[pygame.K_UP] or key[pygame.K_SPACE])
+        if jump_pressed and not self.jump_held:
+            self.jump()
+        self.jump_held = jump_pressed
 
     def move(self, dt):
         # Horizontal movement & collision
@@ -103,6 +152,8 @@ class Player(Animation):
 
     def update(self, dt):
         self.check_on_floor()
+        if self.on_floor and self.direction.y >= 0:
+            self.air_jump_available = True
         self.input()
         self.move(dt)
         self.animate(dt)
@@ -160,7 +211,7 @@ class Player(Animation):
             bottom_rect = pygame.Rect(0, 0, int(self.rect.width), 2)
             bottom_rect.midtop = self.rect.midbottom
 
-        self.on_floor = True if bottom_rect.collidelist([sprite.rect for sprite in self.collisions_sprites]) != -1 else False
+        self.on_floor = self.direction.y >= 0 and bottom_rect.collidelist([sprite.rect for sprite in self.collisions_sprites]) != -1
 
     def collision(self, direction):
         for sprite in self.collisions_sprites:

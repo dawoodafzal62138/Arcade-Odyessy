@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade, arcade_mouse
 import os
 import sys
 import math
@@ -243,7 +244,7 @@ class SpaceShooterDisplay:
             while game_active:
                 dt = clock.tick(60) / 1000
                 raw_mouse = pygame.mouse.get_pos()
-                local_mouse = (raw_mouse[0] - pos_x, raw_mouse[1] - pos_y)
+                local_mouse = arcade_mouse(screen, raw_mouse, self.game_surface.get_size())
                 mouse_moved = (raw_mouse != last_mouse_pos)
                 last_mouse_pos = raw_mouse
 
@@ -354,10 +355,8 @@ class SpaceShooterDisplay:
                 # 6. BLIT CENTERED ON 1920x1080 SCREEN
                 # -------------------------------------------------------------
                 screen.fill((0, 0, 0))
-                screen.blit(self.game_surface, (pos_x, pos_y))
+                draw_arcade(screen, self.game_surface)
 
-                frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-                pygame.draw.rect(screen, (180, 100, 255), frame_rect, width=3, border_radius=6)
 
                 hint = hud_font.render(
                     "SPACE SHOOTER  |  Mouse or WASD/Arrows: Move  |  Space or Left Click: Shoot  |  ESC: Exit",
@@ -378,7 +377,7 @@ class SpaceShooterDisplay:
                     all_sprites.update(1 / 60)
                     self.game_surface.fill("#3b2749")
                     all_sprites.draw(self.game_surface)
-                    screen.blit(self.game_surface, (pos_x, pos_y))
+                    draw_arcade(screen, self.game_surface)
                     pygame.display.update()
 
                 restart = self._show_game_over(screen, total_display_score, pos_x, pos_y)
@@ -404,10 +403,8 @@ class SpaceShooterDisplay:
         self.game_surface.blit(t4, t4.get_frect(center=(GAME_WIDTH // 2, 500)))
 
         screen.fill((0, 0, 0))
-        screen.blit(self.game_surface, (pos_x, pos_y))
+        draw_arcade(screen, self.game_surface)
 
-        frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-        pygame.draw.rect(screen, (180, 100, 255), frame_rect, width=3, border_radius=6)
         pygame.display.update()
 
         waiting = True

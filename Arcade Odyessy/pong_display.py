@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade
 import os
 import sys
 import math
@@ -368,10 +369,8 @@ class PongDisplay:
 
             # 5. Blit Centered on 1920x1080 Screen
             screen.fill((0, 0, 0))
-            screen.blit(self.game_surface, (pos_x, pos_y))
+            draw_arcade(screen, self.game_surface)
 
-            frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-            pygame.draw.rect(screen, (0, 255, 200), frame_rect, width=3, border_radius=6)
 
             hint = font_hud.render(
                 "PONG  |  P1: Up/Down  |  P2: W/S (Auto AI if idle)  |  R: Reset Match  |  ESC: Exit",

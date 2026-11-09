@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade
 import os
 import sys
 import math
@@ -651,10 +652,8 @@ class TinyTitanDisplay:
                 screen.fill((0, 0, 0))
                 pos_x = (WIDTH - self.orig_width) // 2
                 pos_y = (HEIGHT - self.orig_height) // 2
-                screen.blit(self.game_surface, (pos_x, pos_y))
+                draw_arcade(screen, self.game_surface)
 
-                frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-                pygame.draw.rect(screen, (255, 200, 50), frame_rect, width=3, border_radius=6)
 
                 hint = hud_font.render(
                     "TINY TITAN  |  A/D or Arrows: Move  |  Space/W: Jump (Double Jump)  |  ESC: Exit",
@@ -694,9 +693,7 @@ class TinyTitanDisplay:
         pos_y = (HEIGHT - self.orig_height) // 2
 
         screen.fill((0, 0, 0))
-        screen.blit(self.game_surface, (pos_x, pos_y))
-        frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-        pygame.draw.rect(screen, (255, 200, 50), frame_rect, width=3, border_radius=6)
+        draw_arcade(screen, self.game_surface)
 
         hint = hud_font.render("ENTER: Restart  |  ESC: Return to Overworld", True, (180, 180, 200))
         screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))

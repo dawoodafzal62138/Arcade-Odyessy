@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade
 import os
 import sys
 import math
@@ -821,10 +822,8 @@ class PixelRunnerDisplay:
             shake_x = random.randint(-int_shake, int_shake) if int_shake > 0 else 0
             shake_y = random.randint(-int_shake, int_shake) if int_shake > 0 else 0
 
-            screen.blit(self.game_surface, (pos_x + shake_x, pos_y + shake_y))
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y))
 
-            frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-            pygame.draw.rect(screen, (0, 255, 180), frame_rect, width=3, border_radius=6)
 
             outer_hint = outer_hud_font.render(
                 "PIXEL RUNNER  |  Space/W/Up: Jump & Double Jump  |  S/Down: Duck & Slide  |  ESC: Exit",

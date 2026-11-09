@@ -76,6 +76,7 @@ class Game:
             'Ground_background',
             'Ground_background_tiles',
             'Background',
+            'Arcade Machines',
             'Entity',
             'Ground',
             'Ground_foreground',
@@ -124,11 +125,17 @@ class Game:
                             )
                             self.player_spawn = pos
                             self.all_sprites.change_layer(self.player, draw_layer)
-                        elif obj.image:
-                            machine = Sprite(pos, scale_image(obj.image),
-                                             (self.all_sprites, self.machine_sprites))
-                            machine.name = obj.properties.get('game', obj.name)
-                            self.all_sprites.change_layer(machine, draw_layer)
+                    elif name == 'Arcade Machines' and obj.image:
+                        # Cabinet objects can be resized in Tiled independently
+                        # of their source artwork. pytmx already adjusts their
+                        # bottom anchor to a top-left position.
+                        size = (max(1, round(obj.width * TILE_SCALE)),
+                                max(1, round(obj.height * TILE_SCALE)))
+                        image = pygame.transform.scale(obj.image, size)
+                        machine = Sprite(pos, image,
+                                         (self.all_sprites, self.machine_sprites))
+                        machine.name = str(obj.properties.get('game', obj.name)).strip()
+                        self.all_sprites.change_layer(machine, draw_layer)
                     elif obj.image:
                         sprite = Sprite(pos, scale_image(obj.image), self.all_sprites)
                         self.all_sprites.change_layer(sprite, draw_layer)
@@ -259,6 +266,7 @@ class Game:
                     if self.player.rect.top > self.player_spawn[1] + 3500:
                         self.player.rect.topleft = self.player_spawn
                         self.player.direction.y = 0
+                        self.player.air_jump_available = True
 
                 player = getattr(self, 'player', None)
                 world_x = player.rect.centerx if player else self.background_left

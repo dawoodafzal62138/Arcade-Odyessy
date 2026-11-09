@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade
 import os
 import sys
 import math
@@ -260,10 +261,8 @@ class NinjaDisplay:
             shake_y = random.randint(-self.screenshake, self.screenshake) if self.screenshake > 0 else 0
             pos_x = (WIDTH - self.orig_width) // 2 + shake_x
             pos_y = (HEIGHT - self.orig_height) // 2 + shake_y
-            screen.blit(self.game_surface, (pos_x, pos_y))
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y))
 
-            frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-            pygame.draw.rect(screen, (0, 255, 200), frame_rect, width=3, border_radius=6)
 
             hint = hud_font.render("NINJA GAME  |  A/D: Move  |  W/Space: Jump  |  X: Dash  |  ESC: Exit", True, (160, 160, 180))
             screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))

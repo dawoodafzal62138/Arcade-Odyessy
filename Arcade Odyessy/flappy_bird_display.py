@@ -1,3 +1,4 @@
+from arcade_screen import draw_arcade, arcade_mouse
 import os
 import sys
 import random
@@ -181,7 +182,7 @@ class FlappyBirdDisplay:
                         show_gameover_screen = False
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    local_pos = (event.pos[0] - pos_x, event.pos[1] - pos_y)
+                    local_pos = arcade_mouse(screen, event.pos, self.game_surface.get_size())
                     if game_active and event_input:
                         bird_gravity = -9
                         self.jump_sound.play()
@@ -307,10 +308,8 @@ class FlappyBirdDisplay:
             # BLIT CENTERED ON 1920x1080 SCREEN
             # -------------------------------------------------------------
             screen.fill((0, 0, 0))
-            screen.blit(self.game_surface, (pos_x, pos_y))
+            draw_arcade(screen, self.game_surface)
 
-            frame_rect = pygame.Rect(pos_x - 4, pos_y - 4, self.orig_width + 8, self.orig_height + 8)
-            pygame.draw.rect(screen, (0, 220, 255), frame_rect, width=3, border_radius=6)
 
             hint = hud_font.render(
                 "FLAPPY BIRD  |  Space or Left Click: Flap / Start  |  ESC: Exit to Overworld",
