@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade, arcade_mouse
+from control_hints import ControlHints
+from arcade_screen import arcade_game_size, draw_arcade, arcade_mouse
 import os
 import sys
 import math
@@ -15,7 +16,12 @@ from settigns import WIDTH, HEIGHT, CURRENT_DIR
 SPACE_BASE = str((CURRENT_DIR.parent / "space shooter").resolve())
 HIGHSCORE_PATH = os.path.join(SPACE_BASE, "highscore.txt")
 
-GAME_WIDTH, GAME_HEIGHT = 1280, 720
+GAME_WIDTH, GAME_HEIGHT = arcade_game_size(1280, 720)
+
+
+def meteor_spawn_interval(score):
+    """Spawn faster with the current run's score, bounded at 100 ms."""
+    return max(100, 450 / (1 + max(0, score) / 200))
 
 
 def s_join(*args):
@@ -206,6 +212,7 @@ class SpaceShooterDisplay:
         self.assets_loaded = True
 
     def run(self, screen):
+        self.control_hints = ControlHints('space_shooter')
         self._init_assets()
         clock = pygame.time.Clock()
         hud_font = pygame.font.Font(None, 36)
@@ -235,7 +242,6 @@ class SpaceShooterDisplay:
             score = 0
             start_ticks = pygame.time.get_ticks()
             meteor_timer = 0
-            meteor_interval = 450  # milliseconds
 
             game_active = True
             game_over = False
@@ -283,9 +289,12 @@ class SpaceShooterDisplay:
                 # -------------------------------------------------------------
                 # 2. METEOR SPAWNING
                 # -------------------------------------------------------------
+                survival_time = (pygame.time.get_ticks() - start_ticks) // 1000
+                # Double the starting density at 200 points, up to 10 per second.
+                meteor_interval = meteor_spawn_interval(score + survival_time)
                 meteor_timer += dt * 1000
                 if meteor_timer >= meteor_interval:
-                    meteor_timer = 0
+                    meteor_timer %= meteor_interval
                     spawn_x = randint(30, GAME_WIDTH - 30)
                     spawn_y = randint(-150, -50)
                     SpaceMeteor(self.meteor_surface, (spawn_x, spawn_y), (all_sprites, meteor_sprites))
@@ -358,12 +367,7 @@ class SpaceShooterDisplay:
                 draw_arcade(screen, self.game_surface)
 
 
-                hint = hud_font.render(
-                    "SPACE SHOOTER  |  Mouse or WASD/Arrows: Move  |  Space or Left Click: Shoot  |  ESC: Exit",
-                    True,
-                    (180, 180, 200)
-                )
-                screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+                self.control_hints.draw(screen)
 
                 pygame.display.update()
 

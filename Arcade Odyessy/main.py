@@ -1,6 +1,10 @@
 from settigns import *
 from All_sprite import AllSprites
+from startup import StartupScreen
+from ambient_audio import AmbientMusic
+from machine_audio import MachineAudio
 from atmosphere import Atmosphere
+from plants import add_ground_plants
 import pytmx 
 from sprite import Player, CollisionSprites, Sprite
 from utils import *
@@ -36,21 +40,19 @@ class Game:
         self.collision_sprites = pygame.sprite.Group()
         self.machine_sprites = pygame.sprite.Group()
 
-        # Present a deliberate loading frame before the synchronous TMX import.
-        self.screen.fill((12, 25, 40))
-        title = self.font.render("ARCADE ODYSSEY", True, (205, 240, 225))
-        subtitle = self.sub_font.render("Preparing your adventure...", True, (115, 175, 180))
-        self.screen.blit(title, title.get_rect(center=(WIDTH / 2, HEIGHT / 2 - 35)))
-        self.screen.blit(subtitle, subtitle.get_rect(center=(WIDTH / 2, HEIGHT / 2 + 35)))
-        pygame.display.flip()
-        pygame.event.pump()
+        self.startup = StartupScreen(self.screen)
+        self.startup.draw(0.05, 'Awakening the forest...')
 
-        # Load assets and setup map
         self.load_asssets()
+        self.startup.draw(0.20, "Preparing the overworld...")
         self.setup()
+        self.startup.draw(0.92, "Lighting up the arcades...")
         self.setup_background()
         self.atmosphere = Atmosphere(self.screen.get_size())
         self.camera_position = None
+        self.machine_audio = MachineAudio()
+        self.ambient_music = AmbientMusic()
+        self.startup.draw(1.0, "Your adventure is ready.")
 
     def load_asssets(self):
         raw_frames = {
@@ -140,6 +142,13 @@ class Game:
                         sprite = Sprite(pos, scale_image(obj.image), self.all_sprites)
                         self.all_sprites.change_layer(sprite, draw_layer)
 
+        self.plants = add_ground_plants(
+            tmx_map, self.all_sprites, self.machine_sprites,
+            getattr(self, 'player', None),
+            CURRENT_DIR / 'resources' / 'Plant Animations',
+            TILE_SCALE, layer_names.index('Ground'),
+        )
+
     def setup_background(self):
         # Palette stops run from the leftmost scenery to the rightmost scenery.
         # Each stop stores its position (0..1), sky color, and horizon color.
@@ -222,6 +231,10 @@ class Game:
 
 
     def run(self):
+        if not self.startup.show():
+            pygame.quit()
+            return
+        self.clock.tick(FRAMERATE)
         while self.Running:
             dt = self.clock.tick(FRAMERATE) / 1000
 
@@ -237,6 +250,8 @@ class Game:
                             self.Running = False  # Exit fullscreen game cleanly
                         elif (event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER) and self.near_machine:
                             game_name = getattr(self.active_machine, 'name', 'Arcade')
+                            self.ambient_music.stop()
+                            self.machine_audio.stop()
                             self.transition_to_machine()
                             if not self.Running:
                                 break
@@ -260,6 +275,8 @@ class Game:
                 self.all_sprites.update(dt)
                 self.atmosphere.update(dt, getattr(self, 'player', None))
                 self.check_machine_proximity()
+                self.machine_audio.update(dt, getattr(self, 'player', None), self.machine_sprites)
+                self.ambient_music.update(dt, max(self.machine_audio.volumes.values(), default=0.0))
 
                 # Safety: if player falls into a pit in the overworld, respawn at starting platform
                 if hasattr(self, 'player') and hasattr(self, 'player_spawn'):
@@ -298,6 +315,8 @@ class Game:
 
             pygame.display.update()
 
+        self.ambient_music.stop()
+        self.machine_audio.stop()
         pygame.quit()
 
 

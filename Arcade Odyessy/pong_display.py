@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade
+from control_hints import ControlHints
+from arcade_screen import arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -14,13 +15,13 @@ from settigns import WIDTH, HEIGHT, CURRENT_DIR
 PONG_BASE = str((CURRENT_DIR.parent / "Pong").resolve())
 HIGHSCORE_PATH = os.path.join(PONG_BASE, "highscore.txt")
 
-WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
+WINDOW_WIDTH, WINDOW_HEIGHT = arcade_game_size(1280, 720)
 PADDLE_SIZE = (30, 160)
 BALL_SIZE = 26
 
 COLORS = {
     'paddle1': '#ee322c',         # Red (Player 1 - Right)
-    'paddle2': '#1d70d8',         # Blue (Player 2 / AI - Left)
+    'paddle2': '#1d70d8',         # Blue (AI - Left)
     'ball': '#ffffff',            # Crisp white ball
     'bg': '#001a24',              # Deep arcade blue/teal
     'center_line': '#004050',     # Court dividing line
@@ -54,9 +55,7 @@ class PongPaddle(pygame.sprite.Sprite):
         self.direction = 0
         self.speed = 600
         self.is_player1 = is_player1
-        self.last_ai_mode = True
         self.position_y = float(self.rect.centery)
-        self.manual_timeout = 0.0
         self.ai_speed = 440
         self.ai_reaction_timer = 0.0
         self.ai_target = float(WINDOW_HEIGHT / 2)
@@ -106,24 +105,15 @@ class PongPaddle(pygame.sprite.Sprite):
             # Player 1 controls the right paddle.
             self.direction = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
         else:
-            p2_input = int(keys[pygame.K_s]) - int(keys[pygame.K_w])
-            if p2_input:
-                self.direction = p2_input
-                self.manual_timeout = 2.0
-                self.last_ai_mode = False
-                self.ai_tracking_shot = False
-            else:
-                self.manual_timeout = max(0.0, self.manual_timeout - dt)
-                self.last_ai_mode = self.manual_timeout == 0
-                self.direction = 0
-                if self.last_ai_mode and ball is not None:
-                    self.ai_input(dt, ball)
+            self.direction = 0
+            if ball is not None:
+                self.ai_input(dt, ball)
 
     def update(self, dt, ball=None):
         self.input(ball, dt)
-        speed = self.ai_speed if not self.is_player1 and self.last_ai_mode else self.speed
+        speed = self.ai_speed if not self.is_player1 else self.speed
         movement = self.direction * speed * dt
-        if not self.is_player1 and self.last_ai_mode:
+        if not self.is_player1:
             # Stop at the target rather than oscillating around it.
             distance = self.ai_target - self.position_y
             movement = max(-abs(distance), min(abs(distance), movement))
@@ -269,6 +259,7 @@ class PongDisplay:
             pass
 
     def run(self, screen):
+        self.control_hints = ControlHints('pong')
         clock = pygame.time.Clock()
 
         # Reset scores for each fresh session
@@ -362,8 +353,8 @@ class PongDisplay:
                 self.game_surface.blit(rally_text, rally_text.get_rect(center=(center_x, 150)))
 
             # Player Label hints
-            p2_label = font_sub.render("P2 (W/S or AI)", True, (80, 120, 180))
-            p1_label = font_sub.render("P1 (UP/DOWN)", True, (220, 100, 100))
+            p2_label = font_sub.render("AI", True, (80, 120, 180))
+            p1_label = font_sub.render("YOU (UP/DOWN)", True, (220, 100, 100))
             self.game_surface.blit(p2_label, (40, 20))
             self.game_surface.blit(p1_label, (WINDOW_WIDTH - p1_label.get_width() - 40, 20))
 
@@ -372,12 +363,7 @@ class PongDisplay:
             draw_arcade(screen, self.game_surface)
 
 
-            hint = font_hud.render(
-                "PONG  |  P1: Up/Down  |  P2: W/S (Auto AI if idle)  |  R: Reset Match  |  ESC: Exit",
-                True,
-                (180, 180, 200)
-            )
-            screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+            self.control_hints.draw(screen)
 
             pygame.display.update()
 

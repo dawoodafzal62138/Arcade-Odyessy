@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade
+from control_hints import ControlHints
+from arcade_screen import arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -14,8 +15,7 @@ from settigns import WIDTH, HEIGHT, CURRENT_DIR
 TITAN_BASE = str((CURRENT_DIR.parent / "Tiny titan").resolve())
 TITAN_ASSETS = os.path.join(TITAN_BASE, "assets")
 
-TITAN_WIDTH = 800
-TITAN_HEIGHT = 700
+TITAN_WIDTH, TITAN_HEIGHT = arcade_game_size(800, 700)
 TITAN_FPS = 60
 TITAN_PLAYER_VEL = 5
 TITAN_BLOCK_SIZE = 96
@@ -515,6 +515,7 @@ class TinyTitanDisplay:
         return tiles
 
     def run(self, screen):
+        self.control_hints = ControlHints('tiny_titan')
         self._init_assets()
 
         clock = pygame.time.Clock()
@@ -620,6 +621,7 @@ class TinyTitanDisplay:
                 offset_x = max(0, min(offset_x, level.length - self.orig_width))
 
                 # Render to 800x700 game surface
+                self.game_surface.fill((0, 0, 0))
                 for tile in bg_tiles:
                     self.game_surface.blit(bg_img, tile)
 
@@ -655,12 +657,7 @@ class TinyTitanDisplay:
                 draw_arcade(screen, self.game_surface)
 
 
-                hint = hud_font.render(
-                    "TINY TITAN  |  A/D or Arrows: Move  |  Space/W: Jump (Double Jump)  |  ESC: Exit",
-                    True,
-                    (180, 180, 200)
-                )
-                screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+                self.control_hints.draw(screen)
 
                 pygame.display.update()
 
@@ -695,8 +692,7 @@ class TinyTitanDisplay:
         screen.fill((0, 0, 0))
         draw_arcade(screen, self.game_surface)
 
-        hint = hud_font.render("ENTER: Restart  |  ESC: Return to Overworld", True, (180, 180, 200))
-        screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+        self.control_hints.draw(screen)
         pygame.display.update()
 
         waiting = True

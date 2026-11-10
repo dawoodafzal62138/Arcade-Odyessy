@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade
+from control_hints import ControlHints
+from arcade_screen import cover_background, arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -46,11 +47,10 @@ NinjaEnemy.rect = RectProperty()
 class NinjaDisplay:
     def __init__(self, game_name="ninja_game"):
         self.game_name = game_name
-        self.orig_width = 640
-        self.orig_height = 480
+        self.orig_width, self.orig_height = arcade_game_size(640, 480)
         self.game_surface = pygame.Surface((self.orig_width, self.orig_height))
-        self.display = pygame.Surface((320, 240), pygame.SRCALPHA)
-        self.display_2 = pygame.Surface((320, 240))
+        self.display = pygame.Surface((self.orig_width // 2, self.orig_height // 2), pygame.SRCALPHA)
+        self.display_2 = pygame.Surface((self.orig_width // 2, self.orig_height // 2))
         self.movement = [False, False]
 
         self.assets = {
@@ -74,6 +74,8 @@ class NinjaDisplay:
             'gun': load_image('/gun.png'),
             'projectile': load_image('/projectile.png'),
         }
+
+        self.background = cover_background(self.assets['background'], self.display_2.get_size())
 
         self.sounds = {
             "jump": pygame.mixer.Sound(f"{NINJA_BASE}/data/sfx/jump.wav"),
@@ -127,6 +129,7 @@ class NinjaDisplay:
         self.transition = -30
 
     def run(self, screen):
+        self.control_hints = ControlHints('ninja')
         clock = pygame.time.Clock()
         running = True
         hud_font = pygame.font.Font(None, 36)
@@ -224,7 +227,8 @@ class NinjaDisplay:
 
             # Draw
             self.display.fill((0, 0, 0, 0))
-            self.display_2.blit(self.assets['background'], (0, 0))
+            self.display_2.fill((0, 0, 0))
+            self.display_2.blit(self.background, (0, 0))
             self.clouds.render(self.display_2, offset=render_scroll)
             self.tilemap.render(self.display, offset=render_scroll)
 
@@ -264,8 +268,7 @@ class NinjaDisplay:
             draw_arcade(screen, self.game_surface, (shake_x, shake_y))
 
 
-            hint = hud_font.render("NINJA GAME  |  A/D: Move  |  W/Space: Jump  |  X: Dash  |  ESC: Exit", True, (160, 160, 180))
-            screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+            self.control_hints.draw(screen)
 
             pygame.display.update()
 

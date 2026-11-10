@@ -1,6 +1,27 @@
 """Shared cabinet presentation and screen-to-game mouse coordinates."""
 import pygame
+import math
 from settigns import CURRENT_DIR
+
+
+def cover_background(image, size):
+    """Return an opaque background covering size with uniform scaling."""
+    scale = max(size[0] / image.get_width(), size[1] / image.get_height())
+    scaled = pygame.transform.scale(image, (math.ceil(image.get_width() * scale),
+                                            math.ceil(image.get_height() * scale)))
+    background = pygame.Surface(size)
+    background.blit(scaled, scaled.get_rect(center=background.get_rect().center))
+    return background
+
+
+def arcade_game_size(width, height):
+    """Expand a playfield to the cabinet aspect ratio without shrinking it."""
+    ratio = ArcadeScreen.GLASS.width / ArcadeScreen.GLASS.height
+    if width / height < ratio:
+        width = round(height * ratio)
+    else:
+        height = round(width / ratio)
+    return width, height
 
 
 class ArcadeScreen:
@@ -21,6 +42,7 @@ class ArcadeScreen:
                                  round(self.GLASS.width * sx), round(self.GLASS.height * sy))
 
     def viewport(self, game_size):
+        # Native playfields match the opening; preserve sprite proportions.
         return pygame.Rect((0, 0), game_size).fit(self.glass)
 
     def draw(self, screen, game, shake=(0, 0)):

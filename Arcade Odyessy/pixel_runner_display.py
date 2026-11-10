@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade
+from control_hints import ControlHints
+from arcade_screen import arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -29,7 +30,7 @@ from settigns import WIDTH, HEIGHT, CURRENT_DIR
 RUNNER_BASE = str((CURRENT_DIR.parent / "Pixel-Runner-game-main").resolve())
 HIGHSCORE_PATH = os.path.join(RUNNER_BASE, "highscore.txt")
 
-GAME_WIDTH, GAME_HEIGHT = 800, 400
+GAME_WIDTH, GAME_HEIGHT = arcade_game_size(800, 400)
 GROUND_Y = 300
 
 
@@ -393,6 +394,7 @@ class PixelRunnerDisplay:
         self.assets_loaded = True
 
     def run(self, screen):
+        self.control_hints = ControlHints('pixel_runner')
         self._init_assets()
         clock = pygame.time.Clock()
         outer_hud_font = pygame.font.Font(None, 34)
@@ -557,12 +559,10 @@ class PixelRunnerDisplay:
 
                 # Parallax Scrolling
                 ground_x -= game_speed * dt * 60
-                if ground_x <= -800:
-                    ground_x += 800
+                ground_x %= self.ground_surf.get_width()
 
                 sky_x -= (game_speed * 0.15) * dt * 60
-                if sky_x <= -800:
-                    sky_x += 800
+                sky_x %= self.sky_surf.get_width()
 
                 # Clouds
                 for cloud in clouds:
@@ -693,16 +693,18 @@ class PixelRunnerDisplay:
             # 3. DRAW TO 800x400 GAME CANVAS
             # -------------------------------------------------------------
             # Sky (Parallax)
-            self.game_surface.blit(self.sky_surf, (sky_x, 0))
-            self.game_surface.blit(self.sky_surf, (sky_x + 800, 0))
+            self.game_surface.fill(self.sky_surf.get_at((0, 0)))
+            for x in range(-self.sky_surf.get_width(), GAME_WIDTH, self.sky_surf.get_width()):
+                self.game_surface.blit(self.sky_surf, (x + round(sky_x), 0))
 
             # Clouds
             for cloud in clouds:
                 cloud.draw(self.game_surface)
 
             # Ground (Parallax)
-            self.game_surface.blit(self.ground_surf, (ground_x, GROUND_Y))
-            self.game_surface.blit(self.ground_surf, (ground_x + 800, GROUND_Y))
+            for ground_y in range(GROUND_Y, GAME_HEIGHT, self.ground_surf.get_height()):
+                for x in range(-self.ground_surf.get_width(), GAME_WIDTH, self.ground_surf.get_width()):
+                    self.game_surface.blit(self.ground_surf, (x + round(ground_x), ground_y))
 
             # Particles behind player/coins
             for p in particles:
@@ -825,11 +827,6 @@ class PixelRunnerDisplay:
             draw_arcade(screen, self.game_surface, (shake_x, shake_y))
 
 
-            outer_hint = outer_hud_font.render(
-                "PIXEL RUNNER  |  Space/W/Up: Jump & Double Jump  |  S/Down: Duck & Slide  |  ESC: Exit",
-                True,
-                (180, 200, 210)
-            )
-            screen.blit(outer_hint, outer_hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+            self.control_hints.draw(screen)
 
             pygame.display.update()

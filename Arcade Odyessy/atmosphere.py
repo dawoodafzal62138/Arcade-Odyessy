@@ -12,7 +12,6 @@ class Atmosphere:
         self.reveal = 0.0
         self.was_grounded = False
         self.dust = []
-        self.trail_timer = 0.0
         self.font = pygame.font.Font(None, 30)
         self.title = pygame.font.Font(None, 68)
         self.overlay = pygame.Surface(size, pygame.SRCALPHA)
@@ -59,10 +58,6 @@ class Atmosphere:
                     self.dust.append([pygame.Vector2(player.rect.midbottom),
                                       pygame.Vector2(self.rng.uniform(-90, 90), self.rng.uniform(-65, -10)),
                                       0.55, 0.55])
-            self.trail_timer -= dt
-            if not grounded and self.trail_timer <= 0:
-                self.trail_timer = 0.045
-                self.dust.append([pygame.Vector2(player.rect.center), pygame.Vector2(0, 12), 0.3, 0.3])
             self.was_grounded = grounded
         for p in self.dust:
             p[0] += p[1] * dt

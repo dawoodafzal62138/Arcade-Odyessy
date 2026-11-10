@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade
+from control_hints import ControlHints
+from arcade_screen import arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -15,7 +16,7 @@ from settigns import WIDTH, HEIGHT, CURRENT_DIR
 # =========================================================================
 PLATFORM_BASE = str((CURRENT_DIR.parent / "Platform").resolve())
 
-WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
+WINDOW_WIDTH, WINDOW_HEIGHT = arcade_game_size(1280, 720)
 TILE_SIZE = 64
 FRAMERATE = 60
 BG_COLOR = '#fcdfcd'
@@ -382,6 +383,7 @@ class PlatformDisplay:
                 self.player.kill()
 
     def run(self, screen):
+        self.control_hints = ControlHints('platform')
         self._init_assets()
         clock = pygame.time.Clock()
         hud_font = pygame.font.Font(None, 36)
@@ -435,12 +437,7 @@ class PlatformDisplay:
                 draw_arcade(screen, self.game_surface)
 
 
-                hint = hud_font.render(
-                    "PLATFORM  |  A/D or Arrows: Move  |  W/Up: Jump  |  Space: Shoot  |  ESC: Exit",
-                    True,
-                    (180, 180, 200)
-                )
-                screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+                self.control_hints.draw(screen)
 
                 pygame.display.update()
 
@@ -470,8 +467,7 @@ class PlatformDisplay:
         screen.fill((0, 0, 0))
         draw_arcade(screen, self.game_surface)
 
-        hint = hud_font.render("ENTER: Restart  |  ESC: Return to Overworld", True, (180, 180, 200))
-        screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+        self.control_hints.draw(screen)
         pygame.display.update()
 
         waiting = True

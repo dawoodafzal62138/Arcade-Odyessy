@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade, arcade_mouse
+from control_hints import ControlHints
+from arcade_screen import cover_background, arcade_game_size, draw_arcade, arcade_mouse
 import os
 import sys
 import math
@@ -16,7 +17,7 @@ from settigns import WIDTH, HEIGHT, CURRENT_DIR
 # =========================================================================
 VAMPIRE_BASE = str((CURRENT_DIR.parent / "Vampire survivor").resolve())
 
-GAME_WIDTH, GAME_HEIGHT = 1280, 720
+GAME_WIDTH, GAME_HEIGHT = arcade_game_size(1280, 720)
 TILE_SIZE = 64
 
 
@@ -325,10 +326,10 @@ class VampireSurvivorDisplay:
         self.heart_empty = pygame.transform.scale2x(heart_sheet.subsurface((32, 0, 16, 16)))
 
         # Screens
-        self.start_image = pygame.transform.smoothscale(
+        self.start_image = cover_background(
             pygame.image.load(v_join("images", "start.jpeg")).convert(), (GAME_WIDTH, GAME_HEIGHT)
         )
-        self.game_over_image = pygame.transform.smoothscale(
+        self.game_over_image = cover_background(
             pygame.image.load(v_join("images", "gameover.jpeg")).convert(), (GAME_WIDTH, GAME_HEIGHT)
         )
 
@@ -386,6 +387,7 @@ class VampireSurvivorDisplay:
                 target_surf.blit(self.heart_empty, (x, y))
 
     def run(self, screen):
+        self.control_hints = ControlHints('vampire_survivor')
         self._init_assets()
         clock = pygame.time.Clock()
         hud_font = pygame.font.Font(None, 36)
@@ -595,12 +597,7 @@ class VampireSurvivorDisplay:
             draw_arcade(screen, self.game_surface, (shake_x, shake_y))
 
 
-            hint = hud_font.render(
-                "VAMPIRE SURVIVOR  |  WASD: Move  |  Mouse: Aim  |  Left Click: Shoot  |  ESC: Exit",
-                True,
-                (180, 180, 200)
-            )
-            screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+            self.control_hints.draw(screen)
 
             pygame.display.update()
 

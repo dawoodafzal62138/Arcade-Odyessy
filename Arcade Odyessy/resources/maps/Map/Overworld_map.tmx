@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="112" height="35" tilewidth="512" tileheight="512" infinite="0" nextlayerid="12" nextobjectid="864">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="112" height="35" tilewidth="512" tileheight="512" infinite="0" nextlayerid="12" nextobjectid="866">
  <editorsettings>
   <export target="Overworld_map.json" format="json"/>
  </editorsettings>
@@ -16,14 +16,6 @@
  <tileset firstgid="264" source="../Mossy Tileset/decorations_version_1.tsx"/>
  <tileset firstgid="289" source="../Mossy Tileset/arcade_machines.tsx"/>
  <objectgroup id="10" name="Ground_background_background" locked="1">
-  <object id="239" gid="224" x="22025" y="13678" width="679" height="1619"/>
-  <object id="240" gid="225" x="22371" y="13546" width="490" height="1492"/>
-  <object id="241" gid="222" x="21856" y="12983" width="376" height="894"/>
-  <object id="242" gid="222" x="21870" y="13071" width="376" height="894"/>
-  <object id="243" gid="222" x="22704" y="13005" width="376" height="894"/>
-  <object id="244" gid="222" x="22704" y="13035" width="376" height="894"/>
-  <object id="245" gid="222" x="22888" y="13025" width="376" height="894"/>
-  <object id="246" gid="222" x="22926" y="13051" width="376" height="894"/>
   <object id="251" gid="234" x="19089" y="11393" width="675" height="1615"/>
   <object id="252" gid="234" x="20247" y="11460" width="675" height="1615"/>
   <object id="253" gid="233" x="20656" y="10940" width="394" height="987"/>
@@ -203,7 +195,6 @@
   <object id="427" gid="69" x="9595" y="15168" width="491" height="1631"/>
   <object id="428" gid="69" x="9787" y="16064" width="491" height="1631"/>
   <object id="429" gid="1073741890" x="8279" y="13880" width="883" height="864"/>
-  <object id="430" gid="1073741890" x="4205" y="13438" width="923" height="1208" rotation="19.9489"/>
   <object id="446" gid="248" x="29463" y="16316" width="515" height="1735"/>
   <object id="447" gid="248" x="28943" y="15444" width="515" height="1023"/>
   <object id="448" gid="248" x="25887" y="11380" width="515" height="1735"/>
@@ -284,7 +275,6 @@
   <object id="53" gid="199" x="35003" y="2256" width="1447" height="592" rotation="183.345"/>
   <object id="54" gid="200" x="44365" y="1765" width="628" height="585" rotation="180.374"/>
   <object id="55" gid="199" x="17949" y="15108" width="1447" height="592"/>
-  <object id="56" gid="198" x="11188" y="14669" width="785.333" height="420.394"/>
   <object id="57" gid="197" x="25341" y="10954" width="1340" height="580"/>
   <object id="60" gid="201" x="23026" y="16121" width="540" height="490"/>
   <object id="61" gid="201" x="25582" y="16121" width="540" height="490"/>
@@ -311,7 +301,6 @@
   <object id="87" gid="197" x="30530" y="2242" width="1340" height="580" rotation="202.966"/>
   <object id="88" gid="202" x="18191" y="2712" width="523" height="391"/>
   <object id="89" gid="198" x="8538" y="2537" width="1452" height="881"/>
-  <object id="93" gid="198" x="842" y="2813" width="1452" height="881" rotation="332.36"/>
   <object id="95" gid="201" x="5290" y="7437" width="540" height="490"/>
   <object id="96" gid="202" x="7529" y="6656" width="827" height="605"/>
   <object id="98" gid="198" x="23306" y="2457" width="1452" height="881"/>
@@ -377,8 +366,6 @@
   <object id="161" gid="200" x="25990" y="11797" width="628" height="585"/>
   <object id="162" gid="200" x="26422" y="11829" width="628" height="585"/>
   <object id="163" gid="200" x="25266" y="11877" width="628" height="585"/>
-  <object id="164" gid="200" x="11518" y="14829" width="628" height="585"/>
-  <object id="165" gid="200" x="10998" y="14805" width="628" height="585"/>
   <object id="166" gid="200" x="8406" y="9677" width="628" height="585"/>
   <object id="167" gid="200" x="7922" y="9705" width="628" height="585"/>
   <object id="168" gid="197" x="36414" y="11046" width="1340" height="580"/>
@@ -391,13 +378,6 @@
   <object id="176" gid="200" x="31232" y="12800" width="628" height="585"/>
   <object id="177" gid="199" x="4126" y="1483" width="1447" height="592" rotation="168.978"/>
   <object id="178" gid="199" x="7726" y="1648" width="1447" height="592" rotation="177.436"/>
-  <object id="179" gid="199" x="5109" y="4428" width="1447" height="592" rotation="199.612"/>
-  <object id="180" gid="199" x="6119" y="8300" width="1447" height="592" rotation="178.16"/>
-  <object id="183" gid="207" x="33048" y="798" width="6973" height="5077" rotation="174.263"/>
-  <object id="185" gid="208" x="29182.8" y="16179.1" width="21711" height="8381"/>
-  <object id="187" gid="205" x="16870" y="17200" width="10501" height="7232"/>
-  <object id="188" gid="205" x="20959" y="1570" width="7417" height="4652" rotation="180.955"/>
-  <object id="190" gid="207" x="57447" y="11855" width="7451.34" height="5948.42" rotation="235.958"/>
   <object id="462" gid="266" x="32714" y="6297" width="1212" height="930"/>
   <object id="463" gid="277" x="33910" y="6387" width="501" height="501"/>
   <object id="464" gid="277" x="35382" y="6387" width="501" height="501"/>
@@ -627,14 +607,14 @@
   <object id="703" gid="277" x="28478" y="14599" width="501" height="501"/>
  </objectgroup>
  <objectgroup id="11" name="Arcade Machines" locked="1">
-  <object id="856" name="Flappy-bird" gid="289" x="11172" y="10845" width="536" height="729"/>
-  <object id="857" name="pong " gid="290" x="13732" y="9349" width="536" height="729"/>
-  <object id="858" name="Spaceshooter" gid="291" x="19940" y="9349" width="536" height="729"/>
-  <object id="859" name="Ninja" gid="292" x="24492" y="10813" width="536" height="729"/>
-  <object id="860" name="Tiny-titan " gid="293" x="8268" y="12381" width="536" height="729"/>
-  <object id="861" name="platformer " gid="294" x="14860" y="13893" width="536" height="729"/>
-  <object id="862" name="vampire survivor " gid="295" x="19188" y="14941" width="536" height="729"/>
-  <object id="863" name="pixel runner" gid="296" x="22540" y="15949" width="536" height="729"/>
+  <object id="856" name="Flappy-bird" gid="289" x="11172" y="10845" width="545" height="750"/>
+  <object id="857" name="pong " gid="290" x="13732" y="9349" width="545" height="750"/>
+  <object id="858" name="Spaceshooter" gid="291" x="19940" y="9349" width="545" height="750"/>
+  <object id="859" name="Ninja" gid="292" x="24492" y="10813" width="545" height="750"/>
+  <object id="860" name="Tiny-titan " gid="293" x="8268" y="12381" width="545" height="750"/>
+  <object id="861" name="platformer " gid="294" x="14860" y="13893" width="545" height="750"/>
+  <object id="862" name="vampire survivor " gid="295" x="19188" y="14941" width="545" height="750"/>
+  <object id="863" name="pixel runner" gid="296" x="22540" y="15949" width="545" height="750"/>
  </objectgroup>
  <objectgroup id="3" name="Entity" locked="1">
   <object id="704" name="Player" x="15688" y="8872">
@@ -684,7 +664,6 @@
   <object id="1" gid="83" x="14163" y="10050" width="1912.95" height="957" rotation="8.20927"/>
   <object id="3" gid="50" x="14476" y="9421" width="319" height="325"/>
   <object id="12" gid="83" x="33182" y="11823" width="2445" height="1261"/>
-  <object id="14" gid="87" x="35812" y="12725" width="1128" height="4020.26" rotation="284.808"/>
   <object id="15" gid="84" x="43911" y="12053" width="1539" height="1098"/>
   <object id="16" gid="83" x="44246" y="12607" width="2621" height="1365"/>
   <object id="17" gid="85" x="45898" y="12684" width="1701" height="1248"/>
@@ -829,5 +808,7 @@
   <object id="820" x="51812.1" y="4178.79" width="4136.36" height="515.152"/>
   <object id="821" x="53857.6" y="3672.73" width="2084.85" height="569.697"/>
   <object id="822" x="55393.9" y="3160.61" width="493.939" height="566.667"/>
+  <object id="864" x="960" y="3668" width="4016" height="752"/>
+  <object id="865" x="932" y="4432" width="2000" height="516"/>
  </objectgroup>
 </map>

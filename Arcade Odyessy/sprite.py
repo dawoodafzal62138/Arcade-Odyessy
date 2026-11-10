@@ -160,12 +160,14 @@ class Player(Animation):
         self.image_rect.topleft = (self.rect.x - self.offset_x, self.rect.y - self.offset_y)
 
     def animate(self, dt):
+        if self.direction.x:
+            self.flip = self.direction.x < 0
+
         # State determination
         if not self.on_floor:
             new_state = 'jump'
         elif self.direction.x != 0:
             new_state = 'walk'
-            self.flip = self.direction.x < 0
         else:
             new_state = 'idle'
 
@@ -184,8 +186,6 @@ class Player(Animation):
         elif isinstance(self.frames, list):
             if self.direction.x == 0:
                 self.frame_index = 0
-            elif self.direction.x:
-                self.flip = self.direction.x < 0
 
             if not self.on_floor and len(self.frames) > 1:
                 self.frame_index = 1

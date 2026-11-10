@@ -1,4 +1,5 @@
-from arcade_screen import draw_arcade, arcade_mouse
+from control_hints import ControlHints
+from arcade_screen import arcade_game_size, draw_arcade, arcade_mouse
 import os
 import sys
 import random
@@ -7,20 +8,20 @@ import pygame
 from settigns import WIDTH, HEIGHT, CURRENT_DIR
 
 # =========================================================================
-# FLAPPY BIRD GAME (Native 450x600 resolution)
+# FLAPPY BIRD GAME (Expanded cabinet playfield)
 # =========================================================================
 FLAPPY_BASE = str((CURRENT_DIR.parent / "Flappy-Bird-Game-main").resolve())
 RESOURCE_DIR = os.path.join(FLAPPY_BASE, "resourse_flappy")
 FLAPPY_HIGHSCORE_PATH = os.path.join(FLAPPY_BASE, "highscore.txt")
 
-GAME_WIDTH, GAME_HEIGHT = 450, 600
+GAME_WIDTH, GAME_HEIGHT = arcade_game_size(450, 600)
 
 
 class FlappyBirdDisplay:
     """
-    Flappy Bird Game Display (Native 450x600 resolution)
+    Flappy Bird Game Display (Expanded cabinet playfield)
     - Full authentic mechanics, pipe generation, physics, animations, and sound effects
-    - Runs inside its exact 450x600 canvas, centered within the 1920x1080 overworld
+    - Uses a wider native canvas matching the cabinet screen
     - Overworld is completely stopped while playing
     - ESC returns smoothly to the overworld without crashing
     """
@@ -81,19 +82,22 @@ class FlappyBirdDisplay:
 
         flappy_logo = pygame.image.load(os.path.join(img_dir, "flappybird.png")).convert_alpha()
         self.flappybird_image = pygame.transform.scale(flappy_logo, (400, 130))
-        self.flappybird_image_rect = self.flappybird_image.get_rect(center=(225, 150))
+        self.flappybird_image_rect = self.flappybird_image.get_rect(center=(GAME_WIDTH // 2, 150))
 
         btn = pygame.image.load(os.path.join(img_dir, "button_play.png")).convert_alpha()
         self.button_image = pygame.transform.scale(btn, (100, 100))
-        self.button_rect = self.button_image.get_rect(center=(225, 300))
+        self.button_rect = self.button_image.get_rect(center=(GAME_WIDTH // 2, 300))
 
         bg = pygame.image.load(os.path.join(img_dir, "bird", "background.png")).convert_alpha()
-        self.background_image = pygame.transform.scale(bg, (450, 300))
-        self.background_image_rect = self.background_image.get_rect(center=(225, 450))
+        background_tile = pygame.transform.scale(bg, (450, 300))
+        self.background_image = pygame.Surface((GAME_WIDTH, 300))
+        for x in range(0, GAME_WIDTH, background_tile.get_width()):
+            self.background_image.blit(background_tile, (x, 0))
+        self.background_image_rect = self.background_image.get_rect(center=(GAME_WIDTH // 2, 450))
 
         gameover_raw = pygame.image.load(os.path.join(img_dir, "gameover.png")).convert()
         self.gameover_image = gameover_raw
-        self.gameover_image_rect = self.gameover_image.get_rect(center=(225, 150))
+        self.gameover_image_rect = self.gameover_image.get_rect(center=(GAME_WIDTH // 2, 150))
 
         # Audio
         self.background_sound = pygame.mixer.Sound(os.path.join(music_dir, "bgm_mario.mp3"))
@@ -111,11 +115,12 @@ class FlappyBirdDisplay:
     def create_pipe_pair(self):
         gap = 200
         gap_center = random.randint(150, 450)
-        pipeup_rect = self.pipeup_surface.get_rect(midbottom=(500, gap_center - (gap / 2)))
-        pipedown_rect = self.pipedown_surface.get_rect(midtop=(500, gap_center + (gap / 2)))
+        pipeup_rect = self.pipeup_surface.get_rect(midbottom=(GAME_WIDTH + 50, gap_center - (gap / 2)))
+        pipedown_rect = self.pipedown_surface.get_rect(midtop=(GAME_WIDTH + 50, gap_center + (gap / 2)))
         return pipeup_rect, pipedown_rect
 
     def run(self, screen):
+        self.control_hints = ControlHints('flappy_bird')
         self._init_assets()
         clock = pygame.time.Clock()
         hud_font = pygame.font.Font(None, 36)
@@ -214,7 +219,7 @@ class FlappyBirdDisplay:
 
                 # Draw pipes
                 for pipe in pipes:
-                    if pipe.bottom >= 600:
+                    if pipe.bottom >= GAME_HEIGHT:
                         self.game_surface.blit(self.pipedown_surface, pipe)
                     else:
                         self.game_surface.blit(self.pipeup_surface, pipe)
@@ -244,7 +249,7 @@ class FlappyBirdDisplay:
                         if bird_rect.colliderect(pipe):
                             hit = True
                             break
-                    if bird_rect.top <= -50 or bird_rect.bottom >= 600:
+                    if bird_rect.top <= -50 or bird_rect.bottom >= GAME_HEIGHT:
                         hit = True
 
                     if hit:
@@ -257,7 +262,7 @@ class FlappyBirdDisplay:
                             bird_gravity = max(bird_gravity, 1)  # Ensure it falls
 
                 # Handle falling after hit
-                if bird_hit and bird_rect.bottom >= 600:
+                if bird_hit and bird_rect.bottom >= GAME_HEIGHT:
                     bird_hit = False
                     self.die_sound.play()
                     game_active = False
@@ -272,7 +277,7 @@ class FlappyBirdDisplay:
                 # Draw Score
                 score_surf = self.font1.render(str(int(score)), True, (255, 255, 255))
                 score_shadow = self.font1.render(str(int(score)), True, (0, 0, 0))
-                score_rect = score_surf.get_rect(center=(225, 50))
+                score_rect = score_surf.get_rect(center=(GAME_WIDTH // 2, 50))
                 self.game_surface.blit(score_shadow, score_rect.move(2, 2))
                 self.game_surface.blit(score_surf, score_rect)
 
@@ -292,15 +297,15 @@ class FlappyBirdDisplay:
                     self.game_surface.blit(self.button_image, self.button_rect)
 
                     gameover_score = self.font2.render(f"Score: {int(score)}", True, (0, 0, 0))
-                    gameover_score_rect = gameover_score.get_rect(center=(225, 430))
+                    gameover_score_rect = gameover_score.get_rect(center=(GAME_WIDTH // 2, 430))
                     self.game_surface.blit(gameover_score, gameover_score_rect)
 
                     # High score
                     hs_surf = self.font2.render(f"Best: {self.high_score}", True, (255, 200, 0))
-                    self.game_surface.blit(hs_surf, hs_surf.get_rect(center=(225, 460)))
+                    self.game_surface.blit(hs_surf, hs_surf.get_rect(center=(GAME_WIDTH // 2, 460)))
 
                 play_hint = self.font2.render("Press SPACE to Play", True, (255, 255, 255))
-                play_hint_rect = play_hint.get_rect(center=(225, 490))
+                play_hint_rect = play_hint.get_rect(center=(GAME_WIDTH // 2, 490))
                 self.game_surface.blit(self.font2.render("Press SPACE to Play", True, (0, 0, 0)), play_hint_rect.move(2, 2))
                 self.game_surface.blit(play_hint, play_hint_rect)
 
@@ -311,12 +316,7 @@ class FlappyBirdDisplay:
             draw_arcade(screen, self.game_surface)
 
 
-            hint = hud_font.render(
-                "FLAPPY BIRD  |  Space or Left Click: Flap / Start  |  ESC: Exit to Overworld",
-                True,
-                (180, 180, 200)
-            )
-            screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
+            self.control_hints.draw(screen)
 
             pygame.display.update()
 
