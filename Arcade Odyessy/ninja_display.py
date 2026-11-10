@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import cover_background, arcade_game_size, draw_arcade
+from arcade_screen import cover_background, arcade_game_size, draw_arcade, NinjaArcadeScreen
 import os
 import sys
 import math
@@ -42,12 +42,12 @@ NinjaEnemy.rect = RectProperty()
 
 
 # =========================================================================
-# NINJA GAME DISPLAY (Exact 640x480 resolution)
+# NINJA GAME DISPLAY (Playfield fitted to the version 2 cabinet)
 # =========================================================================
 class NinjaDisplay:
     def __init__(self, game_name="ninja_game"):
         self.game_name = game_name
-        self.orig_width, self.orig_height = arcade_game_size(640, 480)
+        self.orig_width, self.orig_height = arcade_game_size(640, 480, NinjaArcadeScreen)
         self.game_surface = pygame.Surface((self.orig_width, self.orig_height))
         self.display = pygame.Surface((self.orig_width // 2, self.orig_height // 2), pygame.SRCALPHA)
         self.display_2 = pygame.Surface((self.orig_width // 2, self.orig_height // 2))
@@ -265,7 +265,7 @@ class NinjaDisplay:
             shake_y = random.randint(-self.screenshake, self.screenshake) if self.screenshake > 0 else 0
             pos_x = (WIDTH - self.orig_width) // 2 + shake_x
             pos_y = (HEIGHT - self.orig_height) // 2 + shake_y
-            draw_arcade(screen, self.game_surface, (shake_x, shake_y))
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y), NinjaArcadeScreen)
 
 
             self.control_hints.draw(screen)

@@ -109,15 +109,18 @@ class Player(Animation):
         self.on_floor = False
         self.flip = False
         self.state = 'idle'
-        self.air_jump_available = True
+        self.max_jumps = 3
+        self.jump_count = 0
         self.jump_held = False
 
     def jump(self):
         if self.on_floor:
-            self.air_jump_available = True
-        else:
-            # Unlimited airborne jumps while testing the overworld.
+            self.jump_count = 0
+        if self.jump_count >= self.max_jumps:
+            return
+        if not self.on_floor:
             self.double_jump_effect()
+        self.jump_count += 1
         self.direction.y = -22
         self.on_floor = False
         self.frame_index = 0
@@ -153,7 +156,7 @@ class Player(Animation):
     def update(self, dt):
         self.check_on_floor()
         if self.on_floor and self.direction.y >= 0:
-            self.air_jump_available = True
+            self.jump_count = 0
         self.input()
         self.move(dt)
         self.animate(dt)

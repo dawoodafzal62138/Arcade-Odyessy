@@ -283,7 +283,7 @@ class Game:
                     if self.player.rect.top > self.player_spawn[1] + 3500:
                         self.player.rect.topleft = self.player_spawn
                         self.player.direction.y = 0
-                        self.player.air_jump_available = True
+                        self.player.jump_count = 0
 
                 player = getattr(self, 'player', None)
                 world_x = player.rect.centerx if player else self.background_left

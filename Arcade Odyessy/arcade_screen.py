@@ -14,9 +14,10 @@ def cover_background(image, size):
     return background
 
 
-def arcade_game_size(width, height):
+def arcade_game_size(width, height, cabinet_class=None):
     """Expand a playfield to the cabinet aspect ratio without shrinking it."""
-    ratio = ArcadeScreen.GLASS.width / ArcadeScreen.GLASS.height
+    cabinet_class = cabinet_class or ArcadeScreen
+    ratio = cabinet_class.GLASS.width / cabinet_class.GLASS.height
     if width / height < ratio:
         width = round(height * ratio)
     else:
@@ -27,10 +28,11 @@ def arcade_game_size(width, height):
 class ArcadeScreen:
     # Inner opening of the updated 1672 x 941 artwork, inside the neon border.
     GLASS = pygame.Rect(307, 213, 1059, 583)
+    ARTWORK = 'Neon Cyberpunk Arcade Tileset2.png'
 
     def __init__(self, size):
         artwork = pygame.image.load(
-            CURRENT_DIR / 'resources' / 'Neon Cyberpunk Arcade Tileset2.png'
+            CURRENT_DIR / 'resources' / self.ARTWORK
         ).convert()
         bounds = artwork.get_rect().fit(pygame.Rect((0, 0), size))
         self.background = pygame.Surface(size)
@@ -61,18 +63,25 @@ class ArcadeScreen:
                 (position[1] - viewport.y) * game_size[1] / viewport.height)
 
 
+class NinjaArcadeScreen(ArcadeScreen):
+    # Larger opening inside the green border of the 1671 x 941 version 2 art.
+    GLASS = pygame.Rect(211, 152, 1248, 670)
+    ARTWORK = 'Neon Cyberpunk Arcade Tileset2_version2.png'
+
+
 _cabinets = {}
 
 
-def cabinet(screen):
+def cabinet(screen, cabinet_class=ArcadeScreen):
     size = screen.get_size()
-    if size not in _cabinets:
-        _cabinets[size] = ArcadeScreen(size)
-    return _cabinets[size]
+    key = (size, cabinet_class)
+    if key not in _cabinets:
+        _cabinets[key] = cabinet_class(size)
+    return _cabinets[key]
 
 
-def draw_arcade(screen, game, shake=(0, 0)):
-    cabinet(screen).draw(screen, game, shake)
+def draw_arcade(screen, game, shake=(0, 0), cabinet_class=ArcadeScreen):
+    cabinet(screen, cabinet_class).draw(screen, game, shake)
 
 
 def arcade_mouse(screen, position, game_size):
