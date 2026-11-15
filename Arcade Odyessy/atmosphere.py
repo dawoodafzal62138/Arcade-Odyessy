@@ -2,6 +2,7 @@
 import math
 import random
 import pygame
+from sky import NightSky
 
 
 class Atmosphere:
@@ -47,6 +48,7 @@ class Atmosphere:
         self.pollen = [(self.rng.random() * self.width,
                         self.rng.random() * self.height,
                         self.rng.uniform(0, math.tau)) for _ in range(42)]
+        self.sky = NightSky(size)
         self.parallax_origin = None
         self.hills = []
         # Periodic silhouettes meet at tile boundaries, even on long traversals.
@@ -210,8 +212,10 @@ class Atmosphere:
         if self.parallax_origin is None:
             self.parallax_origin = pygame.Vector2(offset)
         camera = offset - self.parallax_origin
+        self.sky.draw_sky(screen, camera, self.time, self.draw_repeating_layer)
         for depth, surface in self.hills:
             self.draw_repeating_layer(screen, surface, -camera.x * depth, 0)
+        self.sky.draw_forests(screen, camera, self.draw_repeating_layer)
         self.overlay.fill((0, 0, 0, 0))
         # One cool moonbeam occasionally fades in, with long quiet intervals.
         cycle = self.time % 26

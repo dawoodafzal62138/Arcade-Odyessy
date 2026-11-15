@@ -164,11 +164,11 @@ class Game:
         # Palette stops run from the leftmost scenery to the rightmost scenery.
         # Each stop stores its position (0..1), sky color, and horizon color.
         self.background_palettes = (
-            (0.00, (18, 40, 75), (95, 170, 190)),    # Blue dawn
-            (0.25, (14, 62, 68), (115, 185, 145)),   # Mossy forest
-            (0.50, (48, 35, 85), (165, 130, 185)),   # Violet hills
-            (0.75, (90, 43, 68), (240, 166, 115)),   # Sunset
-            (1.00, (10, 18, 48), (65, 100, 155)),    # Night
+            (0.00, (9, 17, 39), (35, 76, 90)),     # Moonlit blue
+            (0.25, (8, 23, 38), (32, 83, 74)),    # Enchanted forest
+            (0.50, (20, 18, 47), (63, 65, 96)),   # Violet night
+            (0.75, (25, 19, 43), (77, 61, 85)),   # Muted plum horizon
+            (1.00, (7, 13, 34), (29, 57, 82)),    # Deep navy
         )
         scenery = [sprite.rect for sprite in self.all_sprites
                    if sprite is not getattr(self, 'player', None)]
@@ -195,7 +195,7 @@ class Game:
             # Build a narrow strip and stretch it; reuse it until colors change.
             strip = pygame.Surface((1, HEIGHT))
             for y in range(HEIGHT):
-                strip.set_at((0, y), sky.lerp(horizon, y / max(1, HEIGHT - 1)))
+                strip.set_at((0, y), sky.lerp(horizon, (y / max(1, HEIGHT - 1)) ** 1.35))
             self.background_surface = pygame.transform.scale(strip, (WIDTH, HEIGHT))
             self.background_colors = colors
         self.screen.blit(self.background_surface, (0, 0))
@@ -304,8 +304,34 @@ class Game:
 
 
 
+    def fade_out_on_exit(self):
+        """Ease the last visible frame and all audio to silence before closing."""
+        if not pygame.display.get_init() or pygame.display.get_surface() is None:
+            return
+        duration = 0.6
+        snapshot = self.screen.copy()
+        veil = pygame.Surface(self.screen.get_size())
+        veil.fill('black')
+        if pygame.mixer.get_init():
+            pygame.mixer.fadeout(round(duration * 1000))
+            pygame.mixer.music.fadeout(round(duration * 1000))
+        exit_clock = pygame.time.Clock()
+        elapsed = 0.0
+        while elapsed < duration:
+            elapsed += exit_clock.tick(60) / 1000
+            pygame.event.pump()
+            # Keep the window responsive without forwarding inputs to gameplay.
+            pygame.event.get()
+            progress = min(1.0, elapsed / duration)
+            eased = progress * progress * (3 - 2 * progress)
+            self.screen.blit(snapshot, (0, 0))
+            veil.set_alpha(round(255 * eased))
+            self.screen.blit(veil, (0, 0))
+            pygame.display.flip()
+
     def run(self):
         if not self.startup.show():
+            self.fade_out_on_exit()
             pygame.quit()
             return
         self.clock.tick(FRAMERATE)
@@ -340,6 +366,9 @@ class Game:
                         # Check if display requested to exit
                         if getattr(self.active_display, 'should_exit', False):
                             self.return_to_hub()
+
+            if not self.Running:
+                break
 
             # 2. Update & Render
             if self.current_state == "DISPLAY_1":
@@ -385,6 +414,7 @@ class Game:
 
             pygame.display.update()
 
+        self.fade_out_on_exit()
         self.ambient_music.stop()
         self.machine_audio.stop()
         pygame.quit()
