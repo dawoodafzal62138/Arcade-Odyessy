@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import arcade_game_size, draw_arcade
+from arcade_screen import game_ticks, arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -654,7 +654,7 @@ class TinyTitanDisplay:
                 screen.fill((0, 0, 0))
                 pos_x = (WIDTH - self.orig_width) // 2
                 pos_y = (HEIGHT - self.orig_height) // 2
-                draw_arcade(screen, self.game_surface)
+                draw_arcade(screen, self.game_surface, clock=clock)
 
 
                 self.control_hints.draw(screen)

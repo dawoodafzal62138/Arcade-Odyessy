@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import arcade_game_size, draw_arcade, arcade_mouse
+from arcade_screen import game_ticks, arcade_game_size, draw_arcade, arcade_mouse
 import os
 import sys
 import random
@@ -313,7 +313,7 @@ class FlappyBirdDisplay:
             # BLIT CENTERED ON 1920x1080 SCREEN
             # -------------------------------------------------------------
             screen.fill((0, 0, 0))
-            draw_arcade(screen, self.game_surface)
+            draw_arcade(screen, self.game_surface, clock=clock)
 
 
             self.control_hints.draw(screen)

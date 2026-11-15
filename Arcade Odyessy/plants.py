@@ -1,4 +1,5 @@
 """Animated scenery rooted on exposed tiles of the overworld Ground layer."""
+import math
 import random
 import pygame
 
@@ -8,14 +9,21 @@ class GroundPlant(pygame.sprite.Sprite):
         super().__init__(group)
         self.frames = frames
         self.anchor = anchor
+        self.sway_time = phase
         self.frame_index = phase
         self.image = frames[int(phase) % len(frames)]
         self.rect = self.image.get_rect(midbottom=anchor)
 
     def update(self, dt):
         self.frame_index = (self.frame_index + 24 * dt) % len(self.frames)
-        self.image = self.frames[int(self.frame_index)]
-        self.rect = self.image.get_rect(midbottom=self.anchor)
+        self.sway_time += dt
+        frame = self.frames[int(self.frame_index)]
+        angle = math.sin(self.sway_time * 0.65 + self.anchor[0] * 0.013) * 2.0
+        self.image = pygame.transform.rotate(frame, angle)
+        # Rotate around the roots so stems remain planted.
+        root = pygame.Vector2(0, frame.get_height() / 2).rotate(-angle)
+        center = pygame.Vector2(self.anchor) - root
+        self.rect = self.image.get_rect(center=(round(center.x), round(center.y)))
 
 
 def load_plants(directory):

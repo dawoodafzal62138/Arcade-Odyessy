@@ -112,6 +112,8 @@ class Player(Animation):
         self.max_jumps = 3
         self.jump_count = 0
         self.jump_held = False
+        self.eye_cache = {}
+        self.eye_points = []
 
     def jump(self):
         if self.on_floor:
@@ -195,6 +197,15 @@ class Player(Animation):
 
             self.image = self.frames[int(self.frame_index) % len(self.frames)]
 
+        # Find the painted yellow eyes once per source frame, following animation.
+        key = id(self.image)
+        if key not in self.eye_cache:
+            mask = pygame.mask.from_threshold(self.image, (245, 245, 35, 255),
+                                              (65, 65, 80, 255))
+            self.eye_cache[key] = [rect.center for rect in mask.get_bounding_rects()
+                                   if rect.width >= 2 and rect.height >= 2]
+        self.eye_points = [(self.image.get_width() - 1 - x if self.flip else x, y)
+                           for x, y in self.eye_cache[key]]
         # Direction flip
         self.image = pygame.transform.flip(self.image, self.flip, False)
 

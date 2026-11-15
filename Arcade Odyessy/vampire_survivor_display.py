@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import cover_background, arcade_game_size, draw_arcade, arcade_mouse
+from arcade_screen import game_ticks, cover_background, arcade_game_size, draw_arcade, arcade_mouse
 import os
 import sys
 import math
@@ -79,12 +79,12 @@ class VampireBullet(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(center=pos)
         self.speed = 1200
         self.direction = direction
-        self.time = pygame.time.get_ticks()
+        self.time = game_ticks()
         self.life_time = 1000
 
     def update(self, dt):
         self.rect.center += self.speed * self.direction * dt
-        if pygame.time.get_ticks() - self.time > self.life_time:
+        if game_ticks() - self.time > self.life_time:
             self.kill()
 
 
@@ -136,10 +136,10 @@ class VampireEnemy(pygame.sprite.Sprite):
         surf = pygame.mask.from_surface(self.frames[0]).to_surface()
         surf.set_colorkey("black")
         self.image = surf
-        self.death_time = pygame.time.get_ticks()
+        self.death_time = game_ticks()
 
     def death_timer(self):
-        if pygame.time.get_ticks() - self.death_time > self.death_duration:
+        if game_ticks() - self.death_time > self.death_duration:
             self.kill()
 
     def update(self, dt):
@@ -218,10 +218,10 @@ class VampirePlayer(pygame.sprite.Sprite):
             self.image = self.frames[self.state][int(self.frames_index) % len(self.frames[self.state])]
 
     def hit(self):
-        self.hit_time = pygame.time.get_ticks()
+        self.hit_time = game_ticks()
 
     def hit_timer(self):
-        if pygame.time.get_ticks() - self.hit_time < self.hit_duration:
+        if game_ticks() - self.hit_time < self.hit_duration:
             mask = pygame.mask.from_surface(self.image)
             mask_surf = mask.to_surface()
             mask_surf.set_colorkey("black")
@@ -491,7 +491,7 @@ class VampireSurvivorDisplay:
             else:
                 # Shooting logic
                 if not can_shoot:
-                    if pygame.time.get_ticks() - shoot_time > shoot_cooldown:
+                    if game_ticks() - shoot_time > shoot_cooldown:
                         can_shoot = True
 
                 if pygame.mouse.get_pressed()[0] and can_shoot and not dead:
@@ -499,7 +499,7 @@ class VampireSurvivorDisplay:
                     VampireBullet(self.bullet_surface, bullet_pos, self.gun.player_direction, (self.all_sprites, self.bullet_sprite))
                     if self.shoot_sound:
                         self.shoot_sound.play()
-                    shoot_time = pygame.time.get_ticks()
+                    shoot_time = game_ticks()
                     can_shoot = False
 
                 # Spawning enemies
@@ -538,7 +538,7 @@ class VampireSurvivorDisplay:
                             b.kill()
 
                     # Player vs Enemy collisions
-                    now = pygame.time.get_ticks()
+                    now = game_ticks()
                     if now - last_damage_time > damage_cooldown:
                         collided = pygame.sprite.spritecollide(self.player, self.enemy_sprite, False, pygame.sprite.collide_mask)
                         living = [e for e in collided if e.death_time == 0]
@@ -594,7 +594,7 @@ class VampireSurvivorDisplay:
             shake_x = random.randint(-screenshake, screenshake) if screenshake else 0
             shake_y = random.randint(-screenshake, screenshake) if screenshake else 0
 
-            draw_arcade(screen, self.game_surface, (shake_x, shake_y))
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y), clock=clock)
 
 
             self.control_hints.draw(screen)

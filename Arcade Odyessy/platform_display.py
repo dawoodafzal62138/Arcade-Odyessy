@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import arcade_game_size, draw_arcade
+from arcade_screen import entry_transition_pending, game_ticks, arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -48,7 +48,7 @@ class PlatformTimer:
 
     def activate(self):
         self.active = True
-        self.start_time = pygame.time.get_ticks()
+        self.start_time = game_ticks()
 
     def deactivate(self):
         self.active = False
@@ -58,7 +58,7 @@ class PlatformTimer:
 
     def update(self):
         if self.active:
-            if pygame.time.get_ticks() - self.start_time >= self.duration:
+            if game_ticks() - self.start_time >= self.duration:
                 if self.func and self.start_time != 0:
                     self.func()
                 self.deactivate()
@@ -236,7 +236,7 @@ class PlatformBees(PlatformEnemy):
 
     def move(self, dt):
         self.rect.x -= self.speed * dt
-        self.rect.y += math.sin(pygame.time.get_ticks() / self.frequency) * self.amplitude * dt
+        self.rect.y += math.sin(game_ticks() / self.frequency) * self.amplitude * dt
         self.bee_kill()
 
 
@@ -394,6 +394,12 @@ class PlatformDisplay:
         playing_session = True
         while playing_session:
             self.setup()
+            if entry_transition_pending():
+                # Show the spawn view before physics, shooting, or bee spawning.
+                self.game_surface.fill(BG_COLOR)
+                self.all_sprites.draw(self.player.rect.center)
+                draw_arcade(screen, self.game_surface, clock=clock)
+            clock.tick()  # Map loading and the entry zoom are not physics time.
             game_active = True
             player_lost = False
 
@@ -434,7 +440,7 @@ class PlatformDisplay:
 
                 # 4. Center 1280x720 canvas on 1920x1080 screen
                 screen.fill((0, 0, 0))
-                draw_arcade(screen, self.game_surface)
+                draw_arcade(screen, self.game_surface, clock=clock)
 
 
                 self.control_hints.draw(screen)

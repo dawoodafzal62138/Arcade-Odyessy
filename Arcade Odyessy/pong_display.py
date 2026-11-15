@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import arcade_game_size, draw_arcade
+from arcade_screen import game_ticks, arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -360,7 +360,7 @@ class PongDisplay:
 
             # 5. Blit Centered on 1920x1080 Screen
             screen.fill((0, 0, 0))
-            draw_arcade(screen, self.game_surface)
+            draw_arcade(screen, self.game_surface, clock=clock)
 
 
             self.control_hints.draw(screen)

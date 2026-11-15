@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import cover_background, arcade_game_size, draw_arcade, NinjaArcadeScreen
+from arcade_screen import game_ticks, cover_background, arcade_game_size, draw_arcade, NinjaArcadeScreen
 import os
 import sys
 import math
@@ -129,6 +129,11 @@ class NinjaDisplay:
         self.transition = -30
 
     def run(self, screen):
+        # The hub already provides the opening animation. Show a complete,
+        # correctly framed first level during its frozen cabinet zoom.
+        self.transition = 0
+        self.scroll = [self.player.rect().centerx - self.display.get_width() // 2,
+                       self.player.rect().centery - self.display.get_height() // 2]
         self.control_hints = ControlHints('ninja')
         clock = pygame.time.Clock()
         running = True
@@ -265,7 +270,7 @@ class NinjaDisplay:
             shake_y = random.randint(-self.screenshake, self.screenshake) if self.screenshake > 0 else 0
             pos_x = (WIDTH - self.orig_width) // 2 + shake_x
             pos_y = (HEIGHT - self.orig_height) // 2 + shake_y
-            draw_arcade(screen, self.game_surface, (shake_x, shake_y), NinjaArcadeScreen)
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y), NinjaArcadeScreen, clock=clock)
 
 
             self.control_hints.draw(screen)

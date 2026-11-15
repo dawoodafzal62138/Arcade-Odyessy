@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import arcade_game_size, draw_arcade, arcade_mouse
+from arcade_screen import game_ticks, arcade_game_size, draw_arcade, arcade_mouse
 import os
 import sys
 import math
@@ -41,7 +41,7 @@ class SpacePlayer(pygame.sprite.Sprite):
 
     def laser_timer(self):
         if not self.can_shoot:
-            now = pygame.time.get_ticks()
+            now = game_ticks()
             if now - self.last_shoot_time > self.cooldown_time:
                 self.can_shoot = True
 
@@ -99,7 +99,7 @@ class SpaceMeteor(pygame.sprite.Sprite):
         self.image = surf
         self.rect = self.image.get_frect(center=pos)
         self.mask = pygame.mask.from_surface(self.image)
-        self.start_time = pygame.time.get_ticks()
+        self.start_time = game_ticks()
         self.lifetime = 4500
         self.direction = pygame.math.Vector2(uniform(-0.4, 0.4), 1)
         self.speed = randint(300, 480)
@@ -108,7 +108,7 @@ class SpaceMeteor(pygame.sprite.Sprite):
 
     def update(self, dt):
         self.rect.center += self.speed * self.direction * dt
-        if pygame.time.get_ticks() - self.start_time > self.lifetime or self.rect.top > GAME_HEIGHT + 100:
+        if game_ticks() - self.start_time > self.lifetime or self.rect.top > GAME_HEIGHT + 100:
             self.kill()
 
         self.rotation_angle += self.rotation_speed * dt
@@ -240,7 +240,7 @@ class SpaceShooterDisplay:
             player = SpacePlayer(self.player_surface, all_sprites)
 
             score = 0
-            start_ticks = pygame.time.get_ticks()
+            start_ticks = game_ticks()
             meteor_timer = 0
 
             game_active = True
@@ -284,12 +284,12 @@ class SpaceShooterDisplay:
                     if self.laser_sound:
                         self.laser_sound.play()
                     player.can_shoot = False
-                    player.last_shoot_time = pygame.time.get_ticks()
+                    player.last_shoot_time = game_ticks()
 
                 # -------------------------------------------------------------
                 # 2. METEOR SPAWNING
                 # -------------------------------------------------------------
-                survival_time = (pygame.time.get_ticks() - start_ticks) // 1000
+                survival_time = (game_ticks() - start_ticks) // 1000
                 # Double the starting density at 200 points, up to 10 per second.
                 meteor_interval = meteor_spawn_interval(score + survival_time)
                 meteor_timer += dt * 1000
@@ -336,7 +336,7 @@ class SpaceShooterDisplay:
                     game_over = True
 
                 # Score based on survival time (+1 pt / sec)
-                survival_time = (pygame.time.get_ticks() - start_ticks) // 1000
+                survival_time = (game_ticks() - start_ticks) // 1000
                 total_display_score = score + survival_time
 
                 if total_display_score > self.high_score:
@@ -364,7 +364,7 @@ class SpaceShooterDisplay:
                 # 6. BLIT CENTERED ON 1920x1080 SCREEN
                 # -------------------------------------------------------------
                 screen.fill((0, 0, 0))
-                draw_arcade(screen, self.game_surface)
+                draw_arcade(screen, self.game_surface, clock=clock)
 
 
                 self.control_hints.draw(screen)
@@ -381,7 +381,7 @@ class SpaceShooterDisplay:
                     all_sprites.update(1 / 60)
                     self.game_surface.fill("#3b2749")
                     all_sprites.draw(self.game_surface)
-                    draw_arcade(screen, self.game_surface)
+                    draw_arcade(screen, self.game_surface, clock=clock)
                     pygame.display.update()
 
                 restart = self._show_game_over(screen, total_display_score, pos_x, pos_y)

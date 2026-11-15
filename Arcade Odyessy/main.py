@@ -4,7 +4,9 @@ from startup import StartupScreen
 from ambient_audio import AmbientMusic
 from machine_audio import MachineAudio
 from atmosphere import Atmosphere
+from arcade_screen import begin_game_transition, clear_game_transition, ArcadeScreen, NinjaArcadeScreen
 from plants import add_ground_plants
+from slimes import add_slimes
 import pytmx 
 from sprite import Player, CollisionSprites, Sprite
 from utils import *
@@ -48,7 +50,9 @@ class Game:
         self.setup()
         self.startup.draw(0.92, "Lighting up the arcades...")
         self.setup_background()
-        self.atmosphere = Atmosphere(self.screen.get_size())
+        self.atmosphere = Atmosphere(
+            self.screen.get_size(), self.machine_sprites, self.collision_sprites
+        )
         self.camera_position = None
         self.machine_audio = MachineAudio()
         self.ambient_music = AmbientMusic()
@@ -149,6 +153,13 @@ class Game:
             TILE_SCALE, layer_names.index('Ground'),
         )
 
+        self.slimes = add_slimes(
+            tmx_map, self.all_sprites, self.machine_sprites,
+            getattr(self, 'player', None), self.plants,
+            CURRENT_DIR / 'resources' / 'Slimes',
+            TILE_SCALE, layer_names.index('Ground'),
+        )
+
     def setup_background(self):
         # Palette stops run from the leftmost scenery to the rightmost scenery.
         # Each stop stores its position (0..1), sky color, and horizon color.
@@ -189,26 +200,89 @@ class Game:
             self.background_colors = colors
         self.screen.blit(self.background_surface, (0, 0))
 
-    def transition_to_machine(self):
-        """Briefly zoom toward the selected cabinet and fade into its game."""
-        snapshot = self.screen.copy()
-        veil = pygame.Surface(self.screen.get_size())
-        veil.fill('black')
-        focus = pygame.Vector2(self.active_machine.rect.center) - self.all_sprites.offset
+    def machine_screen_view(self, machine):
+        """Match the inner glass opening in the overworld cabinet artwork."""
+        rect = machine.rect
+        name = getattr(machine, 'name', '').strip().lower()
+        # These two cabinets have slightly wider, lower glass openings.
+        if 'platform' in name:
+            opening = (0.28, 0.282, 0.40, 0.18)
+        elif 'pixel' in name or 'runner' in name:
+            opening = (0.282, 0.284, 0.40, 0.18)
+        else:
+            opening = (0.29, 0.28, 0.39, 0.175)
+        x, y, width, height = opening
+        glass = pygame.FRect(rect.x + rect.width * x, rect.y + rect.height * y,
+                            rect.width * width, rect.height * height)
+        glass_center = glass.center
+        glass.move_ip(-self.all_sprites.offset.x, -self.all_sprites.offset.y)
+        # Fill the window without stretching the cabinet artwork.
+        presentation = NinjaArcadeScreen if 'ninja' in getattr(machine, 'name', '').lower() else ArcadeScreen
+        ratio = presentation.GLASS.width / presentation.GLASS.height
+        if glass.width / glass.height < ratio:
+            glass.height = glass.width / ratio
+        else:
+            glass.width = glass.height * ratio
+        glass.center = (glass_center[0] - self.all_sprites.offset.x,
+                        glass_center[1] - self.all_sprites.offset.y)
+        return glass
+
+    def draw_transition_frame(self, progress, returning=False):
+        full = pygame.FRect(self.hub_snapshot.get_rect())
+        # Smoothstep has zero velocity at both ends.
+        eased = progress * progress * (3 - 2 * progress)
+        zoom = 1 - eased if returning else eased
+        target = self.hub_screen_view
+        view = pygame.FRect(full.x + (target.x - full.x) * zoom,
+                            full.y + (target.y - full.y) * zoom,
+                            full.width + (target.width - full.width) * zoom,
+                            full.height + (target.height - full.height) * zoom)
+        crop = pygame.Rect(round(view.x), round(view.y),
+                           max(1, round(view.width)), max(1, round(view.height)))
+        # A bounded crop avoids allocating enormous zoomed copies of the hub.
+        frame = pygame.Surface(crop.size)
+        frame.blit(self.hub_snapshot, (0, 0), crop)
+        if returning and progress < 0.4:
+            flash = pygame.Surface(crop.size, pygame.SRCALPHA)
+            glass = pygame.Rect(round(target.x - crop.x), round(target.y - crop.y),
+                                round(target.width), round(target.height))
+            pygame.draw.rect(flash, (215, 255, 240, round(235 * (1 - progress / 0.4) ** 2)), glass)
+            frame.blit(flash, (0, 0))
+        pygame.transform.smoothscale(frame, self.screen.get_size(), self.screen)
+
+    def animate_machine_transition(self, returning=False):
         transition_clock = pygame.time.Clock()
         elapsed = 0.0
-        while elapsed < 0.3 and self.Running:
+        duration = 1.0 if returning else 0.85
+        while self.Running:
             elapsed += transition_clock.tick(60) / 1000
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.Running = False
-            progress = min(1.0, elapsed / 0.3)
-            scale = 1 + 0.18 * progress * progress
-            enlarged = pygame.transform.scale(snapshot, (round(WIDTH * scale), round(HEIGHT * scale)))
-            self.screen.blit(enlarged, (-focus.x * (scale - 1), -focus.y * (scale - 1)))
-            veil.set_alpha(round(255 * progress))
-            self.screen.blit(veil, (0, 0))
+            progress = min(1.0, elapsed / duration)
+            self.draw_transition_frame(progress, returning)
             pygame.display.flip()
+            if progress >= 1:
+                break
+        self.clock.tick()  # Exclude transition time from game physics.
+
+    def transition_to_machine(self):
+        # Preserve the wizard in the hub; the live game grows over the glass.
+        self.hub_snapshot = self.screen.copy()
+        self.hub_screen_view = self.machine_screen_view(self.active_machine)
+        self.entry_foreground = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        player = getattr(self, 'player', None)
+        if player:
+            position = pygame.Vector2(player.image_rect.topleft) - self.all_sprites.offset
+            self.entry_foreground.blit(player.image, position)
+
+    def return_to_hub(self):
+        clear_game_transition()
+        self.current_state = "DISPLAY_1"
+        self.active_display = None
+        self.atmosphere.reveal = 1.0
+        if hasattr(self, 'hub_snapshot'):
+            self.animate_machine_transition(returning=True)
 
     def check_machine_proximity(self):
         """Check if player is close enough to any arcade machine to interact."""
@@ -256,6 +330,7 @@ class Game:
                             if not self.Running:
                                 break
                             self.active_display = get_display(game_name)
+                            begin_game_transition(self.hub_snapshot, self.hub_screen_view, self.entry_foreground)
                             self.current_state = "DISPLAY_2"
 
                 # State: Minigame (Display 2)
@@ -264,9 +339,7 @@ class Game:
                         self.active_display.handle_event(event)
                         # Check if display requested to exit
                         if getattr(self.active_display, 'should_exit', False):
-                            self.current_state = "DISPLAY_1"
-                            self.active_display = None
-                            self.atmosphere.reveal = 0.0
+                            self.return_to_hub()
 
             # 2. Update & Render
             if self.current_state == "DISPLAY_1":
@@ -305,10 +378,7 @@ class Game:
                 if self.active_display:
                     if hasattr(self.active_display, 'run'):
                         self.active_display.run(self.screen)
-                        self.current_state = "DISPLAY_1"
-                        self.active_display = None
-                        self.atmosphere.reveal = 0.0
-                        self.clock.tick(FRAMERATE)  # Clean timer reset upon return
+                        self.return_to_hub()
                     else:
                         self.active_display.update(dt)
                         self.active_display.draw(self.screen)

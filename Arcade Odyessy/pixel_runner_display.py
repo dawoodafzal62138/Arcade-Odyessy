@@ -1,5 +1,5 @@
 from control_hints import ControlHints
-from arcade_screen import arcade_game_size, draw_arcade
+from arcade_screen import entry_transition_pending, game_ticks, arcade_game_size, draw_arcade
 import os
 import sys
 import math
@@ -439,7 +439,10 @@ class PixelRunnerDisplay:
         coin_interval = 2.2      # seconds
 
         while session_running:
+            entering = entry_transition_pending()
             dt = clock.tick(60) / 1000.0
+            if entering:
+                dt = 0.0
 
             # -------------------------------------------------------------
             # 1. EVENT HANDLING
@@ -453,6 +456,9 @@ class PixelRunnerDisplay:
                             pass
                     return
 
+                if entering and event.type in (pygame.KEYDOWN, pygame.KEYUP,
+                                               pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+                    continue
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         if self.bg_music:
@@ -824,7 +830,7 @@ class PixelRunnerDisplay:
             shake_x = random.randint(-int_shake, int_shake) if int_shake > 0 else 0
             shake_y = random.randint(-int_shake, int_shake) if int_shake > 0 else 0
 
-            draw_arcade(screen, self.game_surface, (shake_x, shake_y))
+            draw_arcade(screen, self.game_surface, (shake_x, shake_y), clock=clock)
 
 
             self.control_hints.draw(screen)

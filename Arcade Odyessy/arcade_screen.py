@@ -80,8 +80,118 @@ def cabinet(screen, cabinet_class=ArcadeScreen):
     return _cabinets[key]
 
 
-def draw_arcade(screen, game, shake=(0, 0), cabinet_class=ArcadeScreen):
-    cabinet(screen, cabinet_class).draw(screen, game, shake)
+_entry_frame = None
+_entry_started = None
+_entry_glass = None
+_entry_foreground = None
+
+
+def begin_game_transition(snapshot, glass, foreground=None):
+    """Start the camera move when the first live game frame is available."""
+    global _entry_frame, _entry_started, _entry_glass, _entry_foreground
+    _entry_frame = snapshot.copy()
+    _entry_foreground = foreground.copy() if foreground is not None else None
+    _entry_glass = pygame.FRect(glass)
+    _entry_started = None
+
+
+def clear_game_transition():
+    global _entry_frame, _entry_started, _entry_glass, _entry_foreground
+    _entry_frame = None
+    _entry_started = None
+    _entry_glass = None
+    _entry_foreground = None
+
+
+_paused_game_ms = 0
+
+
+def entry_transition_pending():
+    return _entry_frame is not None
+
+
+def game_ticks():
+    """Gameplay time excludes time spent in the cabinet entry animation."""
+    return pygame.time.get_ticks() - _paused_game_ms
+
+
+def draw_arcade(screen, game, shake=(0, 0), cabinet_class=ArcadeScreen, clock=None):
+    global _paused_game_ms
+    if _entry_frame is not None:
+        # Render a frozen first frame while the camera moves. The game loop
+        # cannot advance physics, enemies, or input until this function returns.
+        frozen = game.copy()
+        started = pygame.time.get_ticks()
+        transition_clock = pygame.time.Clock()
+        while _entry_frame is not None:
+            quit_events = pygame.event.get(pygame.QUIT)
+            if quit_events:
+                clear_game_transition()
+                for event in quit_events:
+                    pygame.event.post(event)
+                break
+            # Discard gameplay key presses made during the animation.
+            pygame.event.get([pygame.KEYDOWN, pygame.KEYUP, pygame.MOUSEBUTTONDOWN,
+                              pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL])
+            _draw_arcade_frame(screen, frozen, shake, cabinet_class)
+            pygame.display.flip()
+            transition_clock.tick(60)
+        _paused_game_ms += pygame.time.get_ticks() - started
+        if clock is not None:
+            clock.tick()
+    _draw_arcade_frame(screen, game, shake, cabinet_class)
+
+
+def _draw_arcade_frame(screen, game, shake=(0, 0), cabinet_class=ArcadeScreen):
+    global _entry_started
+    presentation = cabinet(screen, cabinet_class)
+    presentation.draw(screen, game, shake)
+    if _entry_frame is None:
+        return
+    now = pygame.time.get_ticks()
+    if _entry_started is None:
+        _entry_started = now
+    progress = min(1.0, (now - _entry_started) / 1100)
+    if progress >= 1:
+        clear_game_transition()
+        return
+    eased = progress * progress * (3 - 2 * progress)
+    viewport = presentation.viewport(game.get_size())
+    full = pygame.FRect(screen.get_rect())
+    # Align the zoomed cabinet glass with the final game viewport.
+    scale = viewport.width / _entry_glass.width
+    target = pygame.FRect(_entry_glass.x - viewport.x / scale,
+                         _entry_glass.y - viewport.y / scale,
+                         full.width / scale, full.height / scale)
+    view = pygame.FRect(*(start + (end - start) * eased
+                         for start, end in zip(full, target)))
+    crop = pygame.Rect(round(view.x), round(view.y),
+                       max(1, round(view.width)), max(1, round(view.height)))
+    frame = pygame.Surface(crop.size)
+    frame.blit(_entry_frame, (0, 0), crop)
+    hub = pygame.transform.smoothscale(frame, screen.get_size())
+    # Reveal the game cabinet around the growing playfield near the end.
+    reveal = max(0.0, (progress - 0.6) / 0.4)
+    reveal = reveal * reveal * (3 - 2 * reveal)
+    hub.set_alpha(round(255 * (1 - reveal)))
+    screen.blit(hub, (0, 0))
+    sx, sy = full.width / view.width, full.height / view.height
+    destination = pygame.Rect(round((_entry_glass.x - view.x) * sx),
+                              round((_entry_glass.y - view.y) * sy),
+                              max(1, round(_entry_glass.width * sx)),
+                              max(1, round(_entry_glass.height * sy)))
+    live = pygame.transform.smoothscale(game, destination.size)
+    # Fade the live picture into the glass without hiding the wizard first.
+    fade = min(1.0, progress / 0.22)
+    live.set_alpha(round(255 * fade * fade * (3 - 2 * fade)))
+    screen.blit(live, destination)
+    if _entry_foreground is not None and reveal < 1:
+        # Preserve depth: the wizard occludes the cabinet glass during the zoom.
+        foreground_crop = pygame.Surface(crop.size, pygame.SRCALPHA)
+        foreground_crop.blit(_entry_foreground, (0, 0), crop)
+        foreground = pygame.transform.smoothscale(foreground_crop, screen.get_size())
+        foreground.set_alpha(round(255 * (1 - reveal)))
+        screen.blit(foreground, (0, 0))
 
 
 def arcade_mouse(screen, position, game_size):
