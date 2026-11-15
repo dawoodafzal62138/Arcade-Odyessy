@@ -107,7 +107,7 @@ class NightSky:
             repeat(screen, ribbon, -camera.x * 0.018 + math.sin(time * 0.04 + index) * 45,
                    self.height * (0.07 + index * 0.10) + math.sin(time * 0.08 + index) * 8)
         moon_x = self.width * 0.76 - math.tanh(camera.x / (self.width * 4)) * self.width * 0.12
-        moon_y = self.height * 0.62 - math.tanh(camera.y / self.height) * self.height * 0.02
+        moon_y = self.height * 0.45 - math.tanh(camera.y / self.height) * self.height * 0.02
         screen.blit(self.moon, self.moon.get_rect(center=(round(moon_x), round(moon_y))))
 
     def draw_forests(self, screen, camera, repeat):
